@@ -28,6 +28,22 @@ palettebg2_end:
 
 .ends
 
+
+
+.section ".rosprite" superfree
+
+gfxpsrite:
+.incbin "sprites.pic"
+gfxpsrite_end:
+
+palsprite:
+.incbin "sprites.pal"
+palsprite_end:
+
+.ends
+
+
+
 .SECTION ".dmas16_text" SUPERFREE
 
 .EQU REG_TM                $212C

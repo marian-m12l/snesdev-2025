@@ -22,5 +22,9 @@ pvsneslibbg2.pic: pvsneslibbg2.png
 	@echo convert bitmap ... $(notdir $@)
 	$(GFXCONV) -s 8 -o 16 -u 16 -e 1 -p -m -i $<
 
-bitmaps : pvsneslibbg1.pic pvsneslibbg2.pic
+sprites.pic: sprites.bmp
+	@echo convert bitmap ... $(notdir $@)
+	$(GFXCONV) -s 32 -o 16 -u 16 -t bmp -i $<
+
+bitmaps : pvsneslibbg1.pic pvsneslibbg2.pic sprites.pic
 

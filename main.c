@@ -16,8 +16,16 @@ extern char palettebg2, palettebg2_end;
 extern char mapbg1, mapbg1_end;
 extern char mapbg2, mapbg2_end;
 
+extern char gfxpsrite, gfxpsrite_end;
+extern char palsprite, palsprite_end;
+
 u8 pada,padb,padx;
-u16 pad0;
+u16 pad0,pad1;
+
+u8 p1_pos_x = 50;
+u8 p1_pos_y = 50;
+u8 p2_pos_x = 150;
+u8 p2_pos_y = 150;
 
 // TODO Compute separation line from position of the two players
 // TODO Need 2 windows ? one for BG 1 and one for BG2 ? With a black separation line ?
@@ -30,6 +38,25 @@ u8 window_positions_table[]=
 {
 	// Lines count, Window 1 Left, Window 1 Right, Window 2 Left, Window 2 Right
 	1, 0xff, 0x0, 0xff, 0x0,	// Disabled at first
+
+	0x80 | 64,					// 64 lines
+
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
+	0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0, 0xff, 0x0,
 
 	0x80 | 64,					// 64 lines
 
@@ -76,6 +103,15 @@ int main(void)
     bgInitMapSet(0, &mapbg1, (&mapbg1_end - &mapbg1), SC_32x32, 0x0000);
 	bgInitMapSet(1, &mapbg2, (&mapbg2_end - &mapbg2), SC_32x32, 0x1000);
 
+    // Init Sprites gfx and palette with default size of 32x32
+    oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite, (&palsprite_end - &palsprite), 0, 0x2000, OBJ_SIZE32_L64);
+
+    // Define sprites parameters
+    oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0); // Put sprite in 100,100, with maximum priority 3 from tile entry 0, palette 0
+    oamSetEx(0, OBJ_SMALL, OBJ_SHOW);
+    oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0); // Put sprite in 100,100, with maximum priority 3 from tile entry 0, palette 0
+    oamSetEx(4, OBJ_SMALL, OBJ_SHOW);
+
     // Now Put in 16 color mode and disable other BGs except 1st and 2nd one
     setMode(BG_MODE1, 0);
     bgSetEnable(1);	// Enable BG2
@@ -103,24 +139,84 @@ int main(void)
 
 	setScreenOn();
 
-    // Wait for nothing :P
+	consoleNocashMessage("Go\n");
+
+	// Wait for nothing :P
     while (1)
     {
         // Get current #0 pad
         pad0 = padsCurrent(0);
+
+		// Handle player 1 movements
+		if (pad0 & KEY_DOWN) {
+			p1_pos_y += 10;
+			if (p1_pos_y > 240) {
+				p1_pos_y = 0;
+			}
+			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+		}
+		if (pad0 & KEY_UP) {
+			p1_pos_y -= 10;
+			if (p1_pos_y > 240) {
+				p1_pos_y = 240;
+			}
+			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+		}
+		if (pad0 & KEY_RIGHT) {
+			p1_pos_x += 10;
+			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+		}
+		if (pad0 & KEY_LEFT) {
+			p1_pos_x -= 10;
+			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+		}
+
+        // Get current #1 pad
+        pad1 = padsCurrent(1);
+
+		// Handle player 2 movements
+		if (pad1 & KEY_DOWN) {
+			p2_pos_y += 10;
+			if (p2_pos_y > 240) {
+				p2_pos_y = 0;
+			}
+			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+		}
+		if (pad1 & KEY_UP) {
+			p2_pos_y -= 10;
+			if (p2_pos_y > 240) {
+				p2_pos_y = 240;
+			}
+			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+		}
+		if (pad1 & KEY_RIGHT) {
+			p2_pos_x += 10;
+			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+		}
+		if (pad1 & KEY_LEFT) {
+			p2_pos_x -= 10;
+			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+		}
+
 
 		// Wait vblank sync
         WaitForVBlank();
 
 		// Update hdma table
 		// TODO During VBlank or use double buffer?
-		/*u8 offset = (offset + 1) % 60;
+		u8 offset = (offset + 1) % 60;
 		for (y=0; y<64; y++) {
 			*(window_positions_table+6+y*4) = offset + y;				// Window 1 Left
-			*(window_positions_table+6+y*4+1) = offset + y + 20;		// Window 1 Right
+			*(window_positions_table+6+y*4+1) = offset + y + 40;		// Window 1 Right
 			*(window_positions_table+6+y*4+2) = offset + 100 + y;		// Window 2 Left
-			*(window_positions_table+6+y*4+3) = offset + 100 + y + 20;	// Window 2 Right
-		}*/
+			*(window_positions_table+6+y*4+3) = offset + 100 + y + 40;	// Window 2 Right
+		}
+		for (y=64; y<128; y++) {
+			*(window_positions_table+7+y*4) = offset + 128 - y;				// Window 1 Left
+			*(window_positions_table+7+y*4+1) = offset + 128 - y + 40;		// Window 1 Right
+			*(window_positions_table+7+y*4+2) = offset + 100 + 128 - y;		// Window 2 Left
+			*(window_positions_table+7+y*4+3) = offset + 100 + 128 - y + 40;	// Window 2 Right
+		}
     }
     return 0;
 }
