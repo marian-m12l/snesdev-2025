@@ -24,63 +24,6 @@ u16 pad0;
 // TODO Draw player sprites
 // TODO Position backgrounds ?
 
-	
-// NOTE, if the # of scanlines has the upper bit $80 set
-// it indicates a number of single scanline waits	
-u8 tablelefttriangle[]=
-{
-	60, 0xff,		// if left is > right, it won't show.
-	0x80 | 64,		// 64 lines of single entries
-    0x7f,0x7e,0x7d,0x7c,0x7b,0x7a,0x79,0x78,0x77,0x76,0x75,0x74,0x73,0x72,0x71,0x70,
-	0x6f,0x6e,0x6d,0x6c,0x6b,0x6a,0x69,0x68,0x67,0x66,0x65,0x64,0x63,0x62,0x61,0x60,
-
-	0x61,0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,0x6a,0x6b,0x6c,0x6d,0x6e,0x6f,0x70,
-	0x71,0x72,0x73,0x74,0x75,0x76,0x77,0x78,0x79,0x7a,0x7b,0x7c,0x7d,0x7e,0x7f,
-	
-	0xff,0
-};
-
-u8 tablerighttriangle[]=
-{
-    
-	60, 0x00,		// Disable window for 60 scanlines
-	0x80 | 64,		// 64 lines of single entries
-	0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,
-	0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9a,0x9b,0x9c,0x9d,0x9e,0x9f,0xa0,
-
-	0x9f,0x9e,0x9d,0x9c,0x9b,0x9a,0x99,0x98,0x97,0x96,0x95,0x94,0x93,0x92,0x91,0x90,
-	0x8f,0x8e,0x8d,0x8c,0x8b,0x8a,0x89,0x88,0x87,0x86,0x85,0x84,0x83,0x82,0x81,
-	
-	0x00,0	
-};
-
-u8 tablelefttriangle2[]=
-{
-	60, 0xff,		// if left is > right, it won't show.
-	0x80 | 64,		// 64 lines of single entries
-    0x7f,0x7e,0x7d,0x7c,0x7b,0x7a,0x79,0x78,0x77,0x76,0x75,0x74,0x73,0x72,0x71,0x70,
-	0x6f,0x6e,0x6d,0x6c,0x6b,0x6a,0x69,0x68,0x67,0x66,0x65,0x64,0x63,0x62,0x61,0x60,
-
-	0x61,0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,0x6a,0x6b,0x6c,0x6d,0x6e,0x6f,0x70,
-	0x71,0x72,0x73,0x74,0x75,0x76,0x77,0x78,0x79,0x7a,0x7b,0x7c,0x7d,0x7e,0x7f,
-	
-	0xff,0
-};
-
-u8 tablerighttriangle2[]=
-{
-    
-	60, 0x00,		// Disable window for 60 scanlines
-	0x80 | 64,		// 64 lines of single entries
-	0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,
-	0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9a,0x9b,0x9c,0x9d,0x9e,0x9f,0xa0,
-
-	0x9f,0x9e,0x9d,0x9c,0x9b,0x9a,0x99,0x98,0x97,0x96,0x95,0x94,0x93,0x92,0x91,0x90,
-	0x8f,0x8e,0x8d,0x8c,0x8b,0x8a,0x89,0x88,0x87,0x86,0x85,0x84,0x83,0x82,0x81,
-	
-	0x00,0	
-};
-
 // TODO Single HDMA table for both windows's left/right positions
 // TODO HDMA Mode 4 : 4 bytes transfered at once on 4 consecutive registers ($2126-$2129)
 u8 window_positions_table[]=
@@ -118,13 +61,8 @@ u8 window_positions_table[]=
     \brief Do a window  effect on screen. Use HDMA Channels 4 & 5.
     \param bgrnd background for the windows effect  (value MSWIN_BG1..MSWIN_BG4)
     \param bgrndmask background mask (inside, outside) for the windows effect  (value MSWIN1_BG13MSKIN..MSWIN1_BG13MSKIN)
-    \param hdmatableL table with windows effect on the left
-    \param hdmatableR table with windows effect on the right
-*/    
-void setModeHdmaWindow2(u8 bgrnd, u8 bgrndmask,u8* hdmatableL,u8* hdmatableR);
-void setModeHdmaWindow2bis(u8 bgrnd, u8 bgrndmask,u8* hdmatableL,u8* hdmatableR);
-void setModeHdmaWindow2ter(u8 bgrnd, u8 bgrndmask,u8* hdmatableL,u8* hdmatableR);
-
+    \param hdmatableL table with windows effect on the left/right for both windows
+*/
 void setModeHdmaWindow1And2SingleHdma(u8 bgrnd, u8 bgrndmask,u8* hdmatable);
 
 //---------------------------------------------------------------------------------
@@ -140,28 +78,12 @@ int main(void)
 
     // Now Put in 16 color mode and disable other BGs except 1st and 2nd one
     setMode(BG_MODE1, 0);
-    bgSetEnable(1);
-    bgSetDisable(2);
-    setScreenOn();
+    bgSetEnable(1);	// Enable BG2
+    bgSetDisable(2);	// Disable BG3
+    //setScreenOn();
 
 	// Compute window position
 	int y;
-	for (y=0; y<63; y++) {
-		*(tablelefttriangle+3+y) = y;
-		*(tablerighttriangle+3+y) = y + 20;
-	}
-	*(tablelefttriangle+3+y) = 0xff;
-	*(tablerighttriangle+3+y) = 0x00;
-
-	for (y=0; y<63; y++) {
-		*(tablelefttriangle2+3+y) = 100+y;
-		*(tablerighttriangle2+3+y) = 100+ y + 20;
-	}
-	*(tablelefttriangle2+3+y) = 0xff;
-	*(tablerighttriangle2+3+y) = 0x00;
-
-
-
 	u8 offset = 0;
 	for (y=0; y<64; y++) {
 		*(window_positions_table+6+y*4) = offset + y;				// Window 1 Left
@@ -175,65 +97,18 @@ int main(void)
 	#define FIXED_MSWIN2_BG2MSKOUT        (1 << 6) /*!< \brief Window 2 area BG2 inside (0) outside(1) */
 	#define FIXED_MSWIN2_BG2MSKENABLE     (2 << 6) /*!< \brief Window 2 area BG2 enable */
 
-
-	// Initialize the window effect on bg1 & bg2
-	//setModeHdmaWindow(MSWIN_BG1 | MSWIN_BG2, MSWIN1_BG1MSKENABLE | MSWIN1_BG2MSKENABLE | MSWIN1_BG1MSKOUT | MSWIN1_BG2MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);
-	
-	//setModeHdmaWindow(MSWIN_BG1, MSWIN1_BG1MSKENABLE | MSWIN1_BG1MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);
-
-	//setModeHdmaWindow(MSWIN_BG1, MSWIN1_BG1MSKENABLE | MSWIN1_BG1MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);
-// FIXME OK	setModeHdmaWindow(1, 3, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);
-
-	// FIXME Need two HDMAs (one for each window)
-	//setModeHdmaWindow(MSWIN_BG1 | MSWIN_BG2, MSWIN1_BG1MSKENABLE | MSWIN1_BG1MSKOUT | FIXED_MSWIN2_BG2MSKENABLE | FIXED_MSWIN2_BG2MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);
-	//setModeHdmaWindow2(MSWIN_BG1 | MSWIN_BG2, MSWIN1_BG1MSKENABLE | MSWIN1_BG1MSKOUT | FIXED_MSWIN2_BG2MSKENABLE | FIXED_MSWIN2_BG2MSKOUT, (u8 *) &tablelefttriangle2, (u8 *) &tablerighttriangle2);
-
-	
-    //bgSetDisable(0);
-	//setModeHdmaWindow2bis(MSWIN_BG2, FIXED_MSWIN2_BG2MSKENABLE | FIXED_MSWIN2_BG2MSKOUT, (u8 *) &tablelefttriangle2, (u8 *) &tablerighttriangle2);
-	//setModeHdmaWindow2bis(0x02, 0xc0, (u8 *) &tablelefttriangle2, (u8 *) &tablerighttriangle2);
-
-	//setModeHdmaWindow2bis(0x03, 0xc3, (u8 *) &tablelefttriangle2, (u8 *) &tablerighttriangle2);
-// FIXME OK	setModeHdmaWindow2ter(0x03, 0xc3, (u8 *) &tablelefttriangle2, (u8 *) &tablerighttriangle2);
-
+	WaitForVBlank();
 	// TODO Separate bg/window setup and hdma?
-	// TODO Single HDMA for both window's Left and Right ?
 	setModeHdmaWindow1And2SingleHdma(0x03, 0xc3, (u8 *) &window_positions_table);
+
+	setScreenOn();
 
     // Wait for nothing :P
     while (1)
     {
         // Get current #0 pad
         pad0 = padsCurrent(0);
-/*
-		// only bg1 with A
-		if (pad0 & KEY_A) {
-			if (!pada) {
-				pada=1;
-				setModeHdmaWindow(MSWIN_BG1, MSWIN1_BG1MSKENABLE | MSWIN1_BG1MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);			
-			}
-		}
-		else pada=0;
 
-		// only bg2 with X
-		if (pad0 & KEY_X) {
-			if (!padx) {
-				padx=1;
-				setModeHdmaWindow(MSWIN_BG2, MSWIN1_BG2MSKENABLE | MSWIN1_BG2MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);			
-			}
-		}
-		else padx=0;
-
-
-		// bg1 & bg2 with B
-		if (pad0 & KEY_B) {
-			if (!padb) {
-				padb=1;
-				setModeHdmaWindow(MSWIN_BG1 | MSWIN_BG2, MSWIN1_BG1MSKENABLE | MSWIN1_BG2MSKENABLE | MSWIN1_BG1MSKOUT | MSWIN1_BG2MSKOUT, (u8 *) &tablelefttriangle, (u8 *) &tablerighttriangle);
-			}
-		}
-		else padb=0;
-*/
 		// Wait vblank sync
         WaitForVBlank();
 
