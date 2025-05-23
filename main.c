@@ -1,12 +1,9 @@
 #include <snes.h>
 #include <string.h>
 
-extern char patternsbg1, patternsbg1_end;
-extern char patternsbg2, patternsbg2_end;
-extern char palettebg1, palettebg1_end;
-extern char palettebg2, palettebg2_end;
-extern char mapbg1, mapbg1_end;
-extern char mapbg2, mapbg2_end;
+extern char patternsmap_512_512, patternsmap_512_512_end;
+extern char palettemap_512_512, palettemap_512_512_end;
+extern char map_512_512, map_512_512_end;
 
 extern char gfxpsrite, gfxpsrite_end;
 extern char palsprite, palsprite_end;
@@ -115,16 +112,16 @@ void setModeHdmaWindow1And2SingleHdma(u8 bgrnd, u8 bgrndmask,u8* hdmatable);
 //---------------------------------------------------------------------------------
 int main(void)
 {
-    // Copy tiles to VRAM
-    bgInitTileSet(0, &patternsbg1, &palettebg1, 0, (&patternsbg1_end - &patternsbg1), 16*1*2, BG_16COLORS, 0x4000);
-    bgInitTileSet(1, &patternsbg2, &palettebg2, 1, (&patternsbg2_end - &patternsbg2), 16*1*2, BG_16COLORS, 0x6000);
-
-    // Copy Map to VRAM
-    bgInitMapSet(0, &mapbg1, (&mapbg1_end - &mapbg1), SC_32x32, 0x0000);
-	bgInitMapSet(1, &mapbg2, (&mapbg2_end - &mapbg2), SC_32x32, 0x1000);
+    // Copy tiles to VRAM (shared tiles for both background maps)
+    bgInitTileSet(0, &patternsmap_512_512, &palettemap_512_512, 0, (&patternsmap_512_512_end - &patternsmap_512_512), 16 * 2, BG_16COLORS, 0x4000);
+    bgInitTileSet(1, &patternsmap_512_512, &palettemap_512_512, 0, (&patternsmap_512_512_end - &patternsmap_512_512), 16 * 2, BG_16COLORS, 0x4000);
+	
+	// Copy Map to VRAM
+    bgInitMapSet(0, &map_512_512, (&map_512_512_end - &map_512_512), SC_64x64, 0x1000);
+    bgInitMapSet(1, &map_512_512, (&map_512_512_end - &map_512_512), SC_64x64, 0x2000);
 
     // Init Sprites gfx and palette with default size of 32x32
-    oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite, (&palsprite_end - &palsprite), 0, 0x2000, OBJ_SIZE32_L64);
+    oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite, (&palsprite_end - &palsprite), 0, 0x8000, OBJ_SIZE32_L64);
 
     // Define sprites parameters
     oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0); // Put sprite in 100,100, with maximum priority 3 from tile entry 0, palette 0
@@ -136,6 +133,8 @@ int main(void)
     setMode(BG_MODE1, 0);
     bgSetEnable(1);	// Enable BG2
     bgSetDisable(2);	// Disable BG3
+
+	bgSetScroll(0, 50, 20);
 
 
 	// FIXME PR to PVSNESLib ?? wrong shift
@@ -261,14 +260,14 @@ int main(void)
 				}
 				if (dx > 0) {
 					*(ptr++) = 0;			// Window 1 Left
-					*(ptr++) = split;		// Window 1 Right
-					*(ptr++) = split;		// Window 2 Left
+					*(ptr++) = split-1;		// Window 1 Right
+					*(ptr++) = split+1;		// Window 2 Left
 					*(ptr++) = 255;		// Window 2 Right
 				} else {
-					*(ptr++) = split;			// Window 1 Left
+					*(ptr++) = split+1;			// Window 1 Left
 					*(ptr++) = 255;		// Window 1 Right
 					*(ptr++) = 0;		// Window 2 Left
-					*(ptr++) = split;		// Window 2 Right
+					*(ptr++) = split-1;		// Window 2 Right
 				}
 				if (y >= offset_y && y < (240-offset_y)) {
 					split_x += slope;
