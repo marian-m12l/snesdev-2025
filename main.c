@@ -229,53 +229,54 @@ int main(void)
 
 			// TODO Use hardware division !!!
 			// TODO Use unsigned ??
-			consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
+			//consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
 			s16 dy = (p2_pos_y - p1_pos_y);
 			s16 dx = (p2_pos_x - p1_pos_x);
 			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
 			s16 slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
-			consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
+			//consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
 
 			// TODO Hardware division !!!
 			// TODO Handle slope == 0
 			u16 abs_slope = slope < 0 ? -slope : slope;
 			u16 lines = (255<<8)/abs_slope;
 			u16 columns = abs_slope > 240 ? 256 : abs_slope;
-			consoleNocashMessage("Voronoi split lines=%d columns=%d\n", lines, columns);
+			//consoleNocashMessage("Voronoi split lines=%d columns=%d\n", lines, columns);
 			u16 offset_x = columns < 256 ? 128 - (columns >> 1) : 0;	// FIXME wrong with positive slope ??
 			u16 offset_y = lines < 240 ? 120 - (lines >> 1) : 0;	// FIXME offset hdma --> need to handle full-height hdma with 4 streaks of 60 lines ?
-			consoleNocashMessage("Voronoi hdma offsets x=%d y=%d\n", offset_x, offset_y);
+			//consoleNocashMessage("Voronoi hdma offsets x=%d y=%d\n", offset_x, offset_y);
 			u16 split_x = slope == 0
 				? (128 << 8)
 				: (slope > 0 ? (offset_x << 8) : ((255 - offset_x) << 8));
-			consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
-			u16 table_offset = 5;
+			//consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
 			u8 y;
 
 			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
 
+			u8* ptr = window_positions_table + 5;
+			u8 split = split_x >> 8;
 			for (y=0; y<240; y++) {
 				if ((y%60) == 0) {
-					table_offset++;
+					ptr++;
 				}
-				u8 split = split_x >> 8;
-				// TODO advance ptr instead of multiplications every time
 				if (dx > 0) {
-					*(window_positions_table+table_offset+y*4) = 0;			// Window 1 Left
-					*(window_positions_table+table_offset+y*4+1) = split;		// Window 1 Right
-					*(window_positions_table+table_offset+y*4+2) = split;		// Window 2 Left
-					*(window_positions_table+table_offset+y*4+3) = 255;		// Window 2 Right
+					*(ptr++) = 0;			// Window 1 Left
+					*(ptr++) = split;		// Window 1 Right
+					*(ptr++) = split;		// Window 2 Left
+					*(ptr++) = 255;		// Window 2 Right
 				} else {
-					*(window_positions_table+table_offset+y*4) = split;			// Window 1 Left
-					*(window_positions_table+table_offset+y*4+1) = 255;		// Window 1 Right
-					*(window_positions_table+table_offset+y*4+2) = 0;		// Window 2 Left
-					*(window_positions_table+table_offset+y*4+3) = split;		// Window 2 Right
+					*(ptr++) = split;			// Window 1 Left
+					*(ptr++) = 255;		// Window 1 Right
+					*(ptr++) = 0;		// Window 2 Left
+					*(ptr++) = split;		// Window 2 Right
 				}
 				if (y >= offset_y && y < (240-offset_y)) {
 					split_x += slope;
+					split = split_x >> 8;
 				}
 				if (y >= (240-offset_y)) {
 					split_x = (slope > 0) ? (255 << 8) : 0;
+					split = split_x >> 8;
 				}
 			}
 		}
