@@ -1,11 +1,3 @@
-/*---------------------------------------------------------------------------------
-
-
-    Simple window effect in mode 1 
-    -- alekmaul
-
-
----------------------------------------------------------------------------------*/
 #include <snes.h>
 #include <string.h>
 
@@ -27,13 +19,9 @@ u16 p1_pos_y = 50;
 u16 p2_pos_x = 150;
 u16 p2_pos_y = 150;
 
-// TODO Compute separation line from position of the two players
-// TODO Need 2 windows ? one for BG 1 and one for BG2 ? With a black separation line ?
-// TODO Draw player sprites
-// TODO Position backgrounds ?
 
-// TODO Single HDMA table for both windows's left/right positions
-// TODO HDMA Mode 4 : 4 bytes transfered at once on 4 consecutive registers ($2126-$2129)
+// Single HDMA table for both windows's left/right positions
+// HDMA Mode 4 : 4 bytes transfered at once on 4 consecutive registers ($2126-$2129)
 u8 window_positions_table[]=
 {
 	// Lines count, Window 1 Left, Window 1 Right, Window 2 Left, Window 2 Right
@@ -148,17 +136,6 @@ int main(void)
     setMode(BG_MODE1, 0);
     bgSetEnable(1);	// Enable BG2
     bgSetDisable(2);	// Disable BG3
-    //setScreenOn();
-
-	// Compute window position
-	/*int y;
-	u8 offset = 0;
-	for (y=0; y<64; y++) {
-		*(window_positions_table+6+y*4) = offset + y;				// Window 1 Left
-		*(window_positions_table+6+y*4+1) = offset + y + 20;		// Window 1 Right
-		*(window_positions_table+6+y*4+2) = offset + 100 + y;		// Window 2 Left
-		*(window_positions_table+6+y*4+3) = offset + 100 + y + 20;	// Window 2 Right
-	}*/
 
 
 	// FIXME PR to PVSNESLib ?? wrong shift
@@ -245,85 +222,7 @@ int main(void)
         WaitForVBlank();
 
 		if (playersMoved) {
-			// TODO Update split screen
-
-			// TODO Simple diagonals depending on P1 quadrant
-			/*if (p1_pos_x < 128 && p1_pos_y < 120) {
-				// Top-Left quadrant
-				// Window 1: L=0; R=256->0
-				// Window 2: L=256->0; R=256
-				// Variable slope
-				u16 slope = 512 - p1_pos_x*4;
-				// FIXME Starting point should depend on slope (to always cross center of screen)
-				u16 split_x = 255 << 8;
-				//u8 split = 255;
-				consoleNocashMessage("TL quadrant: slope to left = %d\n", slope);
-				for (y=0; y<64; y++) {
-					u8 split = split_x >> 8;
-					*(window_positions_table+6+y*4) = 0;			// Window 1 Left
-					*(window_positions_table+6+y*4+1) = split;		// Window 1 Right
-					*(window_positions_table+6+y*4+2) = split;		// Window 2 Left
-					*(window_positions_table+6+y*4+3) = 255;		// Window 2 Right
-					//split--;
-					split_x -= slope;
-				}
-			} else if (p1_pos_x >= 128 && p1_pos_y < 120) {
-				// Top-Right quadrant
-				// Window 1: L=0->256; R=256
-				// Window 2: L=0; R=0->256
-				// Variable slope
-				u16 slope = (p1_pos_x-128)*4;
-				u16 split_x = 0;
-				//u8 split = 0;
-				consoleNocashMessage("TR quadrant: slope to right = %d\n", slope);
-				for (y=0; y<64; y++) {
-					u8 split = split_x >> 8;
-					*(window_positions_table+6+y*4) = split;		// Window 1 Left
-					*(window_positions_table+6+y*4+1) = 255;		// Window 1 Right
-					*(window_positions_table+6+y*4+2) = 0;			// Window 2 Left
-					*(window_positions_table+6+y*4+3) = split;		// Window 2 Right
-					//split++;
-					split_x += slope;
-				}
-			} else if (p1_pos_x < 128 && p1_pos_y >= 120) {
-				// Bottom-Left quadrant
-				// Window 1: L=0; R=0->256
-				// Window 2: L=0->256; R=256
-				// Variable slope
-				u16 slope = 512 - p1_pos_x*4;
-				u16 split_x = 0;
-				//u8 split = 0;
-				consoleNocashMessage("BL quadrant: slope to right = %d\n", slope);
-				for (y=0; y<64; y++) {
-					u8 split = split_x >> 8;
-					*(window_positions_table+6+y*4) = 0;			// Window 1 Left
-					*(window_positions_table+6+y*4+1) = split;		// Window 1 Right
-					*(window_positions_table+6+y*4+2) = split;		// Window 2 Left
-					*(window_positions_table+6+y*4+3) = 255;		// Window 2 Right
-					//split++;
-					split_x += slope;
-				}
-			} else if (p1_pos_x >= 128 && p1_pos_y >= 120) {
-				// Bottom-Right quadrant
-				// Window 1: L=256->0; R=256
-				// Window 2: L=0; R=256->0
-				// Variable slope
-				u16 slope = 512 - (p1_pos_x-128)*4;
-				u16 split_x = 255 << 8;
-				//u8 split = 255;
-				consoleNocashMessage("BR quadrant: slope to left = %d\n", slope);
-				for (y=0; y<64; y++) {
-					u8 split = split_x >> 8;
-					*(window_positions_table+6+y*4) = split;		// Window 1 Left
-					*(window_positions_table+6+y*4+1) = 255;		// Window 1 Right
-					*(window_positions_table+6+y*4+2) = 0;			// Window 2 Left
-					*(window_positions_table+6+y*4+3) = split;		// Window 2 Right
-					//split--;
-					split_x -= slope;
-				}
-			}*/
-
-
+			
 			// TODO Compute slope from players position difference ?
 			// slope = (255*(x2-x1)) / (y2-y1)
 			// direction of slope (sign) : sign(x2-x1) * sign(y2-y1) ?
@@ -333,15 +232,10 @@ int main(void)
 			consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
 			s16 dy = (p2_pos_y - p1_pos_y);
 			s16 dx = (p2_pos_x - p1_pos_x);
-			//s16 slope = -(255*dy) / dx;	// FIXME overflow with large dy (130 * 255 > 32767)!!
-			//s16 slope = - ((dy / dx) << 8);	// FIXME threshold effect (dy/dx rounded to integer slope !!)
 			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
 			s16 slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
 			consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
 
-			// FIXME Starting point should depend on slope (to always cross center of screen)
-			// slope in range (-3500 ; 3500) ? (high slope == horizontal-ish split)
-			// compute min_x and max_x ? min_y and max_y ?
 			// TODO Hardware division !!!
 			// TODO Handle slope == 0
 			u16 abs_slope = slope < 0 ? -slope : slope;
@@ -354,25 +248,15 @@ int main(void)
 			u16 split_x = slope == 0
 				? (128 << 8)
 				: (slope > 0 ? (offset_x << 8) : ((255 - offset_x) << 8));
-			//u8 split = 255;
 			consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
 			u16 table_offset = 5;
 			u8 y;
 
-			// TODO Wrong window when P1 is to the right of P2 !!
-			// TODO Wrong offset when P1 is below P2 !!
-
 			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
-
-			// FIXME when window reaches side border before screen bottom, it stops with the wrong values and breaks window on the bottom
-			//	--> offset_y is an approximation --> keep slope going until it reaches 255 ?
 
 			for (y=0; y<240; y++) {
 				if ((y%60) == 0) {
-					//*(window_positions_table+table_offset+y*4) = 0xbc;	// FIXME 0x80 | 60 (60 lines) --> why is it 0x3c at this point ???
-					table_offset += 1;
-					consoleNocashMessage("table_offset = %d\n", table_offset);
-					//consoleNocashMessage("%p / %p / 0x%02x / 0x%02x\n", window_positions_table, (window_positions_table+table_offset+y*4), table_offset+y*4, (window_positions_table+table_offset+y*4) - window_positions_table);
+					table_offset++;
 				}
 				u8 split = split_x >> 8;
 				// TODO advance ptr instead of multiplications every time
@@ -398,21 +282,7 @@ int main(void)
 
 		// TODO Compute players distance + scroll backgrounds + voronoi split ?
 
-		// Update hdma table
 		// TODO During VBlank or use double buffer?
-		/*u8 offset = (offset + 1) % 60;
-		for (y=0; y<64; y++) {
-			*(window_positions_table+6+y*4) = offset + y;				// Window 1 Left
-			*(window_positions_table+6+y*4+1) = offset + y + 40;		// Window 1 Right
-			*(window_positions_table+6+y*4+2) = offset + 100 + y;		// Window 2 Left
-			*(window_positions_table+6+y*4+3) = offset + 100 + y + 40;	// Window 2 Right
-		}
-		for (y=64; y<128; y++) {
-			*(window_positions_table+7+y*4) = offset + 128 - y;				// Window 1 Left
-			*(window_positions_table+7+y*4+1) = offset + 128 - y + 40;		// Window 1 Right
-			*(window_positions_table+7+y*4+2) = offset + 100 + 128 - y;		// Window 2 Left
-			*(window_positions_table+7+y*4+3) = offset + 100 + 128 - y + 40;	// Window 2 Right
-		}*/
     }
     return 0;
 }
