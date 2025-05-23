@@ -144,6 +144,8 @@ int main(void)
 	// Wait for nothing :P
     while (1)
     {
+		bool playersMoved = false;
+
         // Get current #0 pad
         pad0 = padsCurrent(0);
 
@@ -154,6 +156,7 @@ int main(void)
 				p1_pos_y = 0;
 			}
 			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 		if (pad0 & KEY_UP) {
 			p1_pos_y -= 10;
@@ -161,14 +164,17 @@ int main(void)
 				p1_pos_y = 240;
 			}
 			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 		if (pad0 & KEY_RIGHT) {
 			p1_pos_x += 10;
 			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 		if (pad0 & KEY_LEFT) {
 			p1_pos_x -= 10;
 			oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 
         // Get current #1 pad
@@ -181,6 +187,7 @@ int main(void)
 				p2_pos_y = 0;
 			}
 			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 		if (pad1 & KEY_UP) {
 			p2_pos_y -= 10;
@@ -188,23 +195,103 @@ int main(void)
 				p2_pos_y = 240;
 			}
 			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 		if (pad1 & KEY_RIGHT) {
 			p2_pos_x += 10;
 			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 		if (pad1 & KEY_LEFT) {
 			p2_pos_x -= 10;
 			oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
+			playersMoved = true;
 		}
 
 
 		// Wait vblank sync
         WaitForVBlank();
 
+		if (playersMoved) {
+			// TODO Update split screen
+
+			// TODO Simple diagonals depending on P1 quadrant
+			if (p1_pos_x < 128 && p1_pos_y < 120) {
+				// Top-Left quadrant
+				// Window 1: L=0; R=256->0
+				// Window 2: L=256->0; R=256
+				// Variable slope
+				u16 slope = 512 - p1_pos_x*4;
+				u16 split_x = 255 << 8;
+				//u8 split = 255;
+				for (y=0; y<64; y++) {
+					u8 split = split_x >> 8;
+					*(window_positions_table+6+y*4) = 0;			// Window 1 Left
+					*(window_positions_table+6+y*4+1) = split;		// Window 1 Right
+					*(window_positions_table+6+y*4+2) = split;		// Window 2 Left
+					*(window_positions_table+6+y*4+3) = 255;		// Window 2 Right
+					//split--;
+					split_x -= slope;
+				}
+			} else if (p1_pos_x >= 128 && p1_pos_y < 120) {
+				// Top-Right quadrant
+				// Window 1: L=0->256; R=256
+				// Window 2: L=0; R=0->256
+				// Variable slope
+				u16 slope = (p1_pos_x-128)*4;
+				u16 split_x = 0;
+				//u8 split = 0;
+				for (y=0; y<64; y++) {
+					u8 split = split_x >> 8;
+					*(window_positions_table+6+y*4) = split;		// Window 1 Left
+					*(window_positions_table+6+y*4+1) = 255;		// Window 1 Right
+					*(window_positions_table+6+y*4+2) = 0;			// Window 2 Left
+					*(window_positions_table+6+y*4+3) = split;		// Window 2 Right
+					//split++;
+					split_x += slope;
+				}
+			} else if (p1_pos_x < 128 && p1_pos_y >= 120) {
+				// Bottom-Left quadrant
+				// Window 1: L=0; R=0->256
+				// Window 2: L=0->256; R=256
+				// Variable slope
+				u16 slope = p1_pos_x*4;
+				u16 split_x = 0;
+				//u8 split = 0;
+				for (y=0; y<64; y++) {
+					u8 split = split_x >> 8;
+					*(window_positions_table+6+y*4) = 0;			// Window 1 Left
+					*(window_positions_table+6+y*4+1) = split;		// Window 1 Right
+					*(window_positions_table+6+y*4+2) = split;		// Window 2 Left
+					*(window_positions_table+6+y*4+3) = 255;		// Window 2 Right
+					//split++;
+					split_x += slope;
+				}
+			} else if (p1_pos_x >= 128 && p1_pos_y >= 120) {
+				// Bottom-Right quadrant
+				// Window 1: L=256->0; R=256
+				// Window 2: L=0; R=256->0
+				// Variable slope
+				u16 slope = 512 - (p1_pos_x-128)*4;
+				u16 split_x = 255 << 8;
+				//u8 split = 255;
+				for (y=0; y<64; y++) {
+					u8 split = split_x >> 8;
+					*(window_positions_table+6+y*4) = split;		// Window 1 Left
+					*(window_positions_table+6+y*4+1) = 255;		// Window 1 Right
+					*(window_positions_table+6+y*4+2) = 0;			// Window 2 Left
+					*(window_positions_table+6+y*4+3) = split;		// Window 2 Right
+					//split--;
+					split_x -= slope;
+				}
+			}
+		}
+
+		// TODO Compute players distance + scroll backgrounds + voronoi split ?
+
 		// Update hdma table
 		// TODO During VBlank or use double buffer?
-		u8 offset = (offset + 1) % 60;
+		/*u8 offset = (offset + 1) % 60;
 		for (y=0; y<64; y++) {
 			*(window_positions_table+6+y*4) = offset + y;				// Window 1 Left
 			*(window_positions_table+6+y*4+1) = offset + y + 40;		// Window 1 Right
@@ -216,7 +303,7 @@ int main(void)
 			*(window_positions_table+7+y*4+1) = offset + 128 - y + 40;		// Window 1 Right
 			*(window_positions_table+7+y*4+2) = offset + 100 + 128 - y;		// Window 2 Left
 			*(window_positions_table+7+y*4+3) = offset + 100 + 128 - y + 40;	// Window 2 Right
-		}
+		}*/
     }
     return 0;
 }
