@@ -2,6 +2,10 @@ ifeq ($(strip $(PVSNESLIB_HOME)),)
 $(error "Please create an environment variable PVSNESLIB_HOME by following this guide: https://github.com/alekmaul/pvsneslib/wiki/Installation")
 endif
 
+# Tell the compiler to use FastROM. 
+# $420D reg is enabled on start and reset, nmi and vectors jumps with an ofset of $80 banks
+FASTROM=1
+
 include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
 
 .PHONY: bitmaps all
