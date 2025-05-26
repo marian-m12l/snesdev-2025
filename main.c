@@ -112,16 +112,21 @@ void setModeHdmaWindow1And2SingleHdma(u8 bgrnd, u8 bgrndmask,u8* hdmatable);
 //---------------------------------------------------------------------------------
 int main(void)
 {
-    // Copy tiles to VRAM (shared tiles for both background maps)
-    bgInitTileSet(0, &patternsmap_512_512, &palettemap_512_512, 0, (&patternsmap_512_512_end - &patternsmap_512_512), 16 * 2, BG_16COLORS, 0x4000);
-    bgInitTileSet(1, &patternsmap_512_512, &palettemap_512_512, 0, (&patternsmap_512_512_end - &patternsmap_512_512), 16 * 2, BG_16COLORS, 0x4000);
+	// Copy tiles to VRAM (shared tiles for both background maps)
+	// VRAM address is 4K-aligned word-address (8KiB chunk)
+	// Background tiles @ 0x2000
+    bgInitTileSet(0, &patternsmap_512_512, &palettemap_512_512, 0, (&patternsmap_512_512_end - &patternsmap_512_512), 16 * 2, BG_16COLORS, 0x2000);
+    bgInitTileSet(1, &patternsmap_512_512, &palettemap_512_512, 0, (&patternsmap_512_512_end - &patternsmap_512_512), 16 * 2, BG_16COLORS, 0x2000);
 	
 	// Copy Map to VRAM
+	// Background tilemap @ 0x1000
     bgInitMapSet(0, &map_512_512, (&map_512_512_end - &map_512_512), SC_64x64, 0x1000);
-    bgInitMapSet(1, &map_512_512, (&map_512_512_end - &map_512_512), SC_64x64, 0x2000);
+    bgInitMapSet(1, &map_512_512, (&map_512_512_end - &map_512_512), SC_64x64, 0x1000);
 
     // Init Sprites gfx and palette with default size of 32x32
-    oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite, (&palsprite_end - &palsprite), 0, 0x8000, OBJ_SIZE32_L64);
+	// VRAM address is 8K-aligned word-address (16KiB chunk)
+	// Sprite tiles @ 0x0000
+    oamInitGfxSet(&gfxpsrite, (&gfxpsrite_end - &gfxpsrite), &palsprite, (&palsprite_end - &palsprite), 0, 0x0000, OBJ_SIZE32_L64);
 
     // Define sprites parameters
     oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0); // Put sprite in 100,100, with maximum priority 3 from tile entry 0, palette 0
