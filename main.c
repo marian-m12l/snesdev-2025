@@ -263,16 +263,43 @@ int main(void)
 				if ((y%60) == 0) {
 					ptr++;
 				}
-				if (dx > 0) {
-					*(ptr++) = 0;			// Window 1 Left
-					*(ptr++) = split-1;		// Window 1 Right
-					*(ptr++) = split+1;		// Window 2 Left
-					*(ptr++) = 255;		// Window 2 Right
-				} else {
-					*(ptr++) = split+1;			// Window 1 Left
-					*(ptr++) = 255;		// Window 1 Right
-					*(ptr++) = 0;		// Window 2 Left
-					*(ptr++) = split-1;		// Window 2 Right
+				// FIXME simplify this mess...
+				if (dx > 0) {	// W1 to the left
+					if (split == 255) {	// Hide W2 altogether
+						*(ptr++) = 0;			// Window 1 Left
+						*(ptr++) = split;		// Window 1 Right
+						*(ptr++) = split;		// Window 2 Left
+						*(ptr++) = 0;			// Window 2 Right
+					} else if (split == 0) { // Hide W1 altogether
+						*(ptr++) = 255;			// Window 1 Left
+						*(ptr++) = split;		// Window 1 Right
+						*(ptr++) = split;		// Window 2 Left
+						*(ptr++) = 255;			// Window 2 Right
+					} else {
+						*(ptr++) = 0;			// Window 1 Left
+						*(ptr++) = split-1;		// Window 1 Right
+						*(ptr++) = split+1;		// Window 2 Left
+						*(ptr++) = 255;			// Window 2 Right
+					}
+				} else {	// W1 to the right
+					if (split == 255) {	// Hide W1 altogether
+						*(ptr++) = split;		// Window 1 Left
+						*(ptr++) = 0;			// Window 1 Right
+						*(ptr++) = 0;			// Window 2 Left
+						*(ptr++) = split;		// Window 2 Right
+					} else if (split == 0) { // Hide W2 altogether
+						*(ptr++) = split;		// Window 1 Left
+						*(ptr++) = 255;			// Window 1 Right
+						*(ptr++) = 255;			// Window 2 Left
+						*(ptr++) = split;		// Window 2 Right
+					} else {
+						*(ptr++) = split+1;		// Window 1 Left
+						*(ptr++) = 255;			// Window 1 Right
+						*(ptr++) = 0;			// Window 2 Left
+						*(ptr++) = split-1;		// Window 2 Right
+					}
+
+					
 				}
 				if (y >= offset_y && y < (240-offset_y)) {
 					split_x += slope;
