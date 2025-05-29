@@ -31,6 +31,19 @@ palsprite_end:
 .ends
 
 
+.section ".rolut" superfree
+
+camera_lut_lo:
+.incbin "camera_lut_lo.bin"
+camera_lut_lo_end:
+
+camera_lut_hi:
+.incbin "camera_lut_hi.bin"
+camera_lut_hi_end:
+
+.ends
+
+
 
 .SECTION ".dmas16_text" SUPERFREE
 
