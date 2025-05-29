@@ -256,94 +256,7 @@ int main(void)
         WaitForVBlank();
 
 		if (playersMoved) {
-			
-			// TODO Compute slope from players position difference ?
-			// slope = (255*(x2-x1)) / (y2-y1)
-			// direction of slope (sign) : sign(x2-x1) * sign(y2-y1) ?
 
-			// TODO Use hardware division !!!
-			// TODO Use unsigned ??
-			//consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
-			s16 dy = (p2_pos_y - p1_pos_y);
-			s16 dx = (p2_pos_x - p1_pos_x);
-			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
-			s16 slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
-			consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
-
-			// TODO Hardware division !!!
-			// TODO Handle slope == 0
-			u16 abs_slope = slope < 0 ? -slope : slope;
-			u16 lines = (255<<8)/abs_slope;
-			//u16 columns = abs_slope > SCREEN_HEIGHT ? SCREEN_WIDTH : abs_slope;
-			//u16 columns = (abs_slope * SCREEN_HEIGHT) >> 8;	// FIXME OVERFLOW
-			//u16 columns = ((abs_slope>>1) * (SCREEN_HEIGHT>>1)) >> 6;	// FIXME sometimes wrong
-			//columns = columns > 256 ? 256 : columns;
-			u16 columns = abs_slope > 292 ? SCREEN_WIDTH : (abs_slope * SCREEN_HEIGHT) >> 8;
-			consoleNocashMessage("Voronoi split lines=%d columns=%d\n", lines, columns);
-			u16 offset_x = columns < SCREEN_WIDTH ? SCREEN_HALF_WIDTH - (columns >> 1) : 0;	// FIXME wrong with positive slope ??
-			u16 offset_y = lines < SCREEN_HEIGHT ? SCREEN_HALF_HEIGHT - (lines >> 1) : 0;	// FIXME offset hdma --> need to handle full-height hdma with 4 streaks of 60 lines ?
-			//consoleNocashMessage("Voronoi hdma offsets x=%d y=%d\n", offset_x, offset_y);
-			u16 split_x = slope == 0
-				? (SCREEN_HALF_WIDTH << 8)
-				: (slope > 0 ? (offset_x << 8) : ((255 - offset_x) << 8));
-			//consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
-			u8 y;
-
-			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
-
-			u8* ptr = window_positions_table + 5;
-			u8 split = split_x >> 8;
-			for (y=0; y<SCREEN_HEIGHT; y++) {
-				if ((y%60) == 0) {
-					ptr++;
-				}
-				// FIXME simplify this mess...
-				if (dx > 0) {	// W1 to the left
-					if (split == 255) {	// Hide W2 altogether
-						*(ptr++) = 0;			// Window 1 Left
-						*(ptr++) = split;		// Window 1 Right
-						*(ptr++) = split;		// Window 2 Left
-						*(ptr++) = 0;			// Window 2 Right
-					} else if (split == 0) { // Hide W1 altogether
-						*(ptr++) = 255;			// Window 1 Left
-						*(ptr++) = split;		// Window 1 Right
-						*(ptr++) = split;		// Window 2 Left
-						*(ptr++) = 255;			// Window 2 Right
-					} else {
-						*(ptr++) = 0;			// Window 1 Left
-						*(ptr++) = split-1;		// Window 1 Right
-						*(ptr++) = split+1;		// Window 2 Left
-						*(ptr++) = 255;			// Window 2 Right
-					}
-				} else {	// W1 to the right
-					if (split == 255) {	// Hide W1 altogether
-						*(ptr++) = split;		// Window 1 Left
-						*(ptr++) = 0;			// Window 1 Right
-						*(ptr++) = 0;			// Window 2 Left
-						*(ptr++) = split;		// Window 2 Right
-					} else if (split == 0) { // Hide W2 altogether
-						*(ptr++) = split;		// Window 1 Left
-						*(ptr++) = 255;			// Window 1 Right
-						*(ptr++) = 255;			// Window 2 Left
-						*(ptr++) = split;		// Window 2 Right
-					} else {
-						*(ptr++) = split+1;		// Window 1 Left
-						*(ptr++) = 255;			// Window 1 Right
-						*(ptr++) = 0;			// Window 2 Left
-						*(ptr++) = split-1;		// Window 2 Right
-					}
-
-					
-				}
-				if (y >= offset_y && y < (SCREEN_HEIGHT-offset_y)) {
-					split_x += slope;
-					split = split_x >> 8;
-				}
-				if (y >= (SCREEN_HEIGHT-offset_y)) {
-					split_x = (slope > 0) ? (255 << 8) : 0;
-					split = split_x >> 8;
-				}
-			}
 
 			// Update BG scroll depending on players positions and split slope
 			// TODO "camera" (BG scroll) for each player is positioned on the path between players, at an offset from the player's position (or in the middle when both players are close to each other)
@@ -364,6 +277,9 @@ int main(void)
 			// FIXME ABSOLUTE VALUE OF DX AND DY !!!
 			// FIXME RE-APPLY SIGN TO diff_x_camera AND diff_y_camera !!
 
+			s16 dy = (p2_pos_y - p1_pos_y);
+			s16 dx = (p2_pos_x - p1_pos_x);
+
 			u16 abs_dx = dx >= 0 ? dx : -(dx+1)+1;
 			u16 abs_dy = dy >= 0 ? dy : -(dy+1)+1;
 
@@ -372,56 +288,185 @@ int main(void)
 			if (camera_diff == 0) {
 				// TODO single bg, no split screen
 				//consoleNocashMessage("should show bg 1 only\n");
+
+				// TODO Compute middle point + bg scroll + sprite positions
+				u16 camera_x = (p1_pos_x + p2_pos_x) >> 1;
+				u16 camera_y = (p1_pos_y + p2_pos_y) >> 1;
+
+				u16 bg1_scroll_x = camera_x < SCREEN_HALF_WIDTH ? 0 : camera_x - SCREEN_HALF_WIDTH;
+				u16 bg1_scroll_y = camera_y < SCREEN_HALF_HEIGHT ? 0 : camera_y - SCREEN_HALF_HEIGHT;
+				u16 bg2_scroll_x = bg1_scroll_x;
+				u16 bg2_scroll_y = bg1_scroll_y;
+
+				// TODO sprite half-size ?
+				u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
+				u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
+				u16 p2_sprite_x = p2_pos_x - bg2_scroll_x;
+				u16 p2_sprite_y = p2_pos_y - bg2_scroll_y;
+
+				// TODO Apply scroll and sprite positions
+				bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
+				bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
+
+				// TODO Mirror sprites to look at each other ?
+				oamSetXY(0, p1_sprite_x, p1_sprite_y);
+				oamSetXY(4, p2_sprite_x, p2_sprite_y);
+
+				// TODO Display only BG1 --> disable windows ?? update hdma table to always show bg1 ?
+
+				u8* ptr = window_positions_table + 5;
+				u8 y;
+				for (y=0; y<SCREEN_HEIGHT; y++) {
+					if ((y%60) == 0) {
+						ptr++;
+					}
+					// Hide W2 altogether
+					*(ptr++) = 0;			// Window 1 Left
+					*(ptr++) = 255;		// Window 1 Right
+					*(ptr++) = 255;		// Window 2 Left
+					*(ptr++) = 0;			// Window 2 Right
+				}
+			} else {
+				u16 diff_x_camera = (camera_diff >> 8) << 2;
+				u16 diff_y_camera = (camera_diff & 0xff) << 2;
+
+				//u16 length = vector2d_distance(dx, dy); //sqrt(dx*dx + dy*dy);
+				//u16 distance = (length > max_separation) ? max_separation : length;
+				// FIXME always "max separation" when displaying split screen ?? otherwise single BG is displayed ?
+				// --> LUT could provide the vector directly ((dx * max_separation) / length and (dx * max_separation) / length) ?
+				/*if (length <= max_separation) {
+					// TODO Use single BG / no split screen
+				}*/
+				// TODO if (length <= max_separation) --> single window, centered camera --> TODO Check before computing slope and drawing split line...
+				// TODO otherwise, the 2 backgrounds must be placed apart from the split line (at half distance, unless BG offset hits the tilemap border)
+				// FIXME cannot normalize without floats --> multiply first ?
+				//u16 diff_x_normalized = dx / length;	// FIXME unused?
+				//u16 diff_y_normalized = dy / length;	// FIXME unused?
+				//u16 diff_x_camera = (dx * distance) / length;	//diff_x_normalized * distance;
+				//u16 diff_y_camera = (dy * distance) / length;	//diff_y_normalized * distance;
+				s16 half_diff_x = dx < 0 ? -(diff_x_camera >> 1) : (diff_x_camera >> 1);
+				s16 half_diff_y = dy < 0 ? -(diff_y_camera >> 1) : (diff_y_camera >> 1);
+				// FIXME Adjust sprite position so that its CENTER is at the given position (depends on dx/dy sign)
+				s16 p1_sprite_offset_x = dx < 0 ? 16 : -16;
+				s16 p1_sprite_offset_y = dy < 0 ? 16 : -16;
+				s16 p2_sprite_offset_x = dx < 0 ? -16 : 16;
+				s16 p2_sprite_offset_y = dy < 0 ? -16 : 16;
+				u16 bg1_scroll_x = p1_pos_x + half_diff_x + p1_sprite_offset_x;
+				u16 bg1_scroll_y = p1_pos_y + half_diff_y + p1_sprite_offset_y;
+				u16 bg2_scroll_x = p2_pos_x - half_diff_x + p2_sprite_offset_x;
+				u16 bg2_scroll_y = p2_pos_y - half_diff_y + p2_sprite_offset_y;
+				// TODO Clamp bg scroll !!
+				// TODO bg_scroll = camera position - half-screen (scroll is top-left !!)
+				bg1_scroll_x = bg1_scroll_x < SCREEN_HALF_WIDTH ? 0 : bg1_scroll_x - SCREEN_HALF_WIDTH;
+				bg1_scroll_y = bg1_scroll_y < SCREEN_HALF_HEIGHT ? 0 : bg1_scroll_y - SCREEN_HALF_HEIGHT;
+				bg2_scroll_x = bg2_scroll_x < SCREEN_HALF_WIDTH ? 0 : bg2_scroll_x - SCREEN_HALF_WIDTH;
+				bg2_scroll_y = bg2_scroll_y < SCREEN_HALF_HEIGHT ? 0 : bg2_scroll_y - SCREEN_HALF_HEIGHT;
+				// TODO sprite position: p1_sprite_x = ???
+				u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
+				u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
+				u16 p2_sprite_x = p2_pos_x - bg2_scroll_x;
+				u16 p2_sprite_y = p2_pos_y - bg2_scroll_y;
+				//consoleNocashMessage("dx=%d dy=%d len=%d dist=%d dxn=%d dyn=%d dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d\n", dx, dy, length, distance, diff_x_normalized, diff_y_normalized, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y);
+				//consoleNocashMessage("dx=%d dy=%d dc=0x%04x dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d p1x=%d p1y=%d p2x=%d p2y=%d\n", dx, dy, camera_diff, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y, p1_sprite_x, p1_sprite_y, p2_sprite_x, p2_sprite_y);
+
+				// TODO Apply scroll and sprite positions
+				bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
+				bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
+
+				// TODO Mirror sprites to look at each other ?
+				oamSetXY(0, p1_sprite_x, p1_sprite_y);
+				oamSetXY(4, p2_sprite_x, p2_sprite_y);
+
+				// TODO Update split screen
+			
+				// TODO Compute slope from players position difference ?
+				// slope = (255*(x2-x1)) / (y2-y1)
+				// direction of slope (sign) : sign(x2-x1) * sign(y2-y1) ?
+
+				// TODO Use hardware division !!!
+				// TODO Use unsigned ??
+				//consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
+				// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
+				s16 slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
+				//consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
+
+				// TODO Hardware division !!!
+				// TODO Handle slope == 0
+				u16 abs_slope = slope < 0 ? -slope : slope;
+				u16 lines = (255<<8)/abs_slope;
+				//u16 columns = abs_slope > SCREEN_HEIGHT ? SCREEN_WIDTH : abs_slope;
+				//u16 columns = (abs_slope * SCREEN_HEIGHT) >> 8;	// FIXME OVERFLOW
+				//u16 columns = ((abs_slope>>1) * (SCREEN_HEIGHT>>1)) >> 6;	// FIXME sometimes wrong
+				//columns = columns > 256 ? 256 : columns;
+				u16 columns = abs_slope > 292 ? SCREEN_WIDTH : (abs_slope * SCREEN_HEIGHT) >> 8;
+				//consoleNocashMessage("Voronoi split lines=%d columns=%d\n", lines, columns);
+				u16 offset_x = columns < SCREEN_WIDTH ? SCREEN_HALF_WIDTH - (columns >> 1) : 0;	// FIXME wrong with positive slope ??
+				u16 offset_y = lines < SCREEN_HEIGHT ? SCREEN_HALF_HEIGHT - (lines >> 1) : 0;	// FIXME offset hdma --> need to handle full-height hdma with 4 streaks of 60 lines ?
+				//consoleNocashMessage("Voronoi hdma offsets x=%d y=%d\n", offset_x, offset_y);
+				u16 split_x = slope == 0
+					? (SCREEN_HALF_WIDTH << 8)
+					: (slope > 0 ? (offset_x << 8) : ((255 - offset_x) << 8));
+				//consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
+				
+
+				// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
+
+				u8* ptr = window_positions_table + 5;
+				u8 split = split_x >> 8;
+				u8 y;
+				for (y=0; y<SCREEN_HEIGHT; y++) {
+					if ((y%60) == 0) {
+						ptr++;
+					}
+					// FIXME simplify this mess...
+					if (dx > 0) {	// W1 to the left
+						if (split == 255) {	// Hide W2 altogether
+							*(ptr++) = 0;			// Window 1 Left
+							*(ptr++) = split;		// Window 1 Right
+							*(ptr++) = split;		// Window 2 Left
+							*(ptr++) = 0;			// Window 2 Right
+						} else if (split == 0) { // Hide W1 altogether
+							*(ptr++) = 255;			// Window 1 Left
+							*(ptr++) = split;		// Window 1 Right
+							*(ptr++) = split;		// Window 2 Left
+							*(ptr++) = 255;			// Window 2 Right
+						} else {
+							*(ptr++) = 0;			// Window 1 Left
+							*(ptr++) = split-1;		// Window 1 Right
+							*(ptr++) = split+1;		// Window 2 Left
+							*(ptr++) = 255;			// Window 2 Right
+						}
+					} else {	// W1 to the right
+						if (split == 255) {	// Hide W1 altogether
+							*(ptr++) = split;		// Window 1 Left
+							*(ptr++) = 0;			// Window 1 Right
+							*(ptr++) = 0;			// Window 2 Left
+							*(ptr++) = split;		// Window 2 Right
+						} else if (split == 0) { // Hide W2 altogether
+							*(ptr++) = split;		// Window 1 Left
+							*(ptr++) = 255;			// Window 1 Right
+							*(ptr++) = 255;			// Window 2 Left
+							*(ptr++) = split;		// Window 2 Right
+						} else {
+							*(ptr++) = split+1;		// Window 1 Left
+							*(ptr++) = 255;			// Window 1 Right
+							*(ptr++) = 0;			// Window 2 Left
+							*(ptr++) = split-1;		// Window 2 Right
+						}
+
+						
+					}
+					if (y >= offset_y && y < (SCREEN_HEIGHT-offset_y)) {
+						split_x += slope;
+						split = split_x >> 8;
+					}
+					if (y >= (SCREEN_HEIGHT-offset_y)) {
+						split_x = (slope > 0) ? (255 << 8) : 0;
+						split = split_x >> 8;
+					}
+				}
 			}
-			u16 diff_x_camera = (camera_diff >> 8) << 2;
-			u16 diff_y_camera = (camera_diff & 0xff) << 2;
 
-			//u16 length = vector2d_distance(dx, dy); //sqrt(dx*dx + dy*dy);
-			//u16 distance = (length > max_separation) ? max_separation : length;
-			// FIXME always "max separation" when displaying split screen ?? otherwise single BG is displayed ?
-			// --> LUT could provide the vector directly ((dx * max_separation) / length and (dx * max_separation) / length) ?
-			/*if (length <= max_separation) {
-				// TODO Use single BG / no split screen
-			}*/
-			// TODO if (length <= max_separation) --> single window, centered camera --> TODO Check before computing slope and drawing split line...
-			// TODO otherwise, the 2 backgrounds must be placed apart from the split line (at half distance, unless BG offset hits the tilemap border)
-			// FIXME cannot normalize without floats --> multiply first ?
-			//u16 diff_x_normalized = dx / length;	// FIXME unused?
-			//u16 diff_y_normalized = dy / length;	// FIXME unused?
-			//u16 diff_x_camera = (dx * distance) / length;	//diff_x_normalized * distance;
-			//u16 diff_y_camera = (dy * distance) / length;	//diff_y_normalized * distance;
-			s16 half_diff_x = dx < 0 ? -(diff_x_camera >> 1) : (diff_x_camera >> 1);
-			s16 half_diff_y = dy < 0 ? -(diff_y_camera >> 1) : (diff_y_camera >> 1);
-			// FIXME Adjust sprite position so that its CENTER is at the given position (depends on dx/dy sign)
-			s16 p1_sprite_offset_x = dx < 0 ? 16 : -16;
-			s16 p1_sprite_offset_y = dy < 0 ? 16 : -16;
-			s16 p2_sprite_offset_x = dx < 0 ? -16 : 16;
-			s16 p2_sprite_offset_y = dy < 0 ? -16 : 16;
-			u16 bg1_scroll_x = p1_pos_x + half_diff_x + p1_sprite_offset_x;
-			u16 bg1_scroll_y = p1_pos_y + half_diff_y + p1_sprite_offset_y;
-			u16 bg2_scroll_x = p2_pos_x - half_diff_x + p2_sprite_offset_x;
-			u16 bg2_scroll_y = p2_pos_y - half_diff_y + p2_sprite_offset_y;
-			// TODO Clamp bg scroll !!
-			// TODO bg_scroll = camera position - half-screen (scroll is top-left !!)
-			bg1_scroll_x = bg1_scroll_x < SCREEN_HALF_WIDTH ? 0 : bg1_scroll_x - SCREEN_HALF_WIDTH;
-			bg1_scroll_y = bg1_scroll_y < SCREEN_HALF_HEIGHT ? 0 : bg1_scroll_y - SCREEN_HALF_HEIGHT;
-			bg2_scroll_x = bg2_scroll_x < SCREEN_HALF_WIDTH ? 0 : bg2_scroll_x - SCREEN_HALF_WIDTH;
-			bg2_scroll_y = bg2_scroll_y < SCREEN_HALF_HEIGHT ? 0 : bg2_scroll_y - SCREEN_HALF_HEIGHT;
-			// TODO sprite position: p1_sprite_x = ???
-			u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
-			u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
-			u16 p2_sprite_x = p2_pos_x - bg2_scroll_x;
-			u16 p2_sprite_y = p2_pos_y - bg2_scroll_y;
-			//consoleNocashMessage("dx=%d dy=%d len=%d dist=%d dxn=%d dyn=%d dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d\n", dx, dy, length, distance, diff_x_normalized, diff_y_normalized, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y);
-			//consoleNocashMessage("dx=%d dy=%d dc=0x%04x dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d p1x=%d p1y=%d p2x=%d p2y=%d\n", dx, dy, camera_diff, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y, p1_sprite_x, p1_sprite_y, p2_sprite_x, p2_sprite_y);
-
-			// TODO Apply scroll and sprite positions
-			bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
-			bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
-
-			// TODO Mirror sprites to look at each other ?
-			oamSetXY(0, p1_sprite_x, p1_sprite_y);
-			oamSetXY(4, p2_sprite_x, p2_sprite_y);
 		}
 
 		// TODO Compute players distance + scroll backgrounds + voronoi split ?
