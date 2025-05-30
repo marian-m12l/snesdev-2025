@@ -14,6 +14,8 @@
 #define SPRITE_HALF_WIDTH (16)
 #define SPRITE_HALF_HEIGHT (16)
 
+#define MOVEMENT_STEP (8)
+
 extern const char patternsmap_512_512, patternsmap_512_512_end;
 extern const char palettemap_512_512, palettemap_512_512_end;
 extern const char map_512_512, map_512_512_end;
@@ -145,6 +147,8 @@ int main(void)
     oamSetEx(0, OBJ_SMALL, OBJ_SHOW);
     oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 4, 0); // Put sprite in 100,100, with maximum priority 3 from tile entry 0, palette 0
     oamSetEx(4, OBJ_SMALL, OBJ_SHOW);
+    oamSet(8, SCREEN_HALF_WIDTH - SPRITE_HALF_WIDTH, SCREEN_HALF_HEIGHT - SPRITE_HALF_HEIGHT, 3, 0, 0, 8, 0); // Put sprite in 100,100, with maximum priority 3 from tile entry 0, palette 0
+    oamSetEx(8, OBJ_SMALL, OBJ_HIDE);
 
     // Now Put in 16 color mode and disable other BGs except 1st and 2nd one
     setMode(BG_MODE1, 0);
@@ -190,7 +194,7 @@ int main(void)
 		// FIXME Player positions SHOULD NOT directly update OAM sprite positions !!
 		// Update background scrolling instead !!
 		if (pad0 & KEY_DOWN) {
-			p1_pos_y += 10;
+			p1_pos_y += MOVEMENT_STEP;
 			if (p1_pos_y > (MAP_HEIGHT - SPRITE_HEIGHT)) {
 				p1_pos_y = MAP_HEIGHT - SPRITE_HEIGHT;
 			}
@@ -198,7 +202,7 @@ int main(void)
 			playersMoved = true;
 		}
 		if (pad0 & KEY_UP) {
-			p1_pos_y -= 10;
+			p1_pos_y -= MOVEMENT_STEP;
 			if (p1_pos_y > MAP_HEIGHT) {
 				p1_pos_y = 0;
 			}
@@ -206,7 +210,7 @@ int main(void)
 			playersMoved = true;
 		}
 		if (pad0 & KEY_RIGHT) {
-			p1_pos_x += 10;
+			p1_pos_x += MOVEMENT_STEP;
 			if (p1_pos_x > (MAP_WIDTH - SPRITE_WIDTH)) {
 				p1_pos_x = MAP_WIDTH - SPRITE_WIDTH;
 			}
@@ -214,7 +218,7 @@ int main(void)
 			playersMoved = true;
 		}
 		if (pad0 & KEY_LEFT) {
-			p1_pos_x -= 10;
+			p1_pos_x -= MOVEMENT_STEP;
 			if (p1_pos_x > MAP_WIDTH) {
 				p1_pos_x = 0;
 			}
@@ -227,7 +231,7 @@ int main(void)
 
 		// Handle player 2 movements
 		if (pad1 & KEY_DOWN) {
-			p2_pos_y += 10;
+			p2_pos_y += MOVEMENT_STEP;
 			if (p2_pos_y > (MAP_HEIGHT - SPRITE_HEIGHT)) {
 				p2_pos_y = MAP_HEIGHT - SPRITE_HEIGHT;
 			}
@@ -235,7 +239,7 @@ int main(void)
 			playersMoved = true;
 		}
 		if (pad1 & KEY_UP) {
-			p2_pos_y -= 10;
+			p2_pos_y -= MOVEMENT_STEP;
 			if (p2_pos_y > MAP_HEIGHT) {
 				p2_pos_y = 0;
 			}
@@ -243,7 +247,7 @@ int main(void)
 			playersMoved = true;
 		}
 		if (pad1 & KEY_RIGHT) {
-			p2_pos_x += 10;
+			p2_pos_x += MOVEMENT_STEP;
 			if (p2_pos_x > (MAP_WIDTH - SPRITE_WIDTH)) {
 				p2_pos_x = MAP_WIDTH - SPRITE_WIDTH;
 			}
@@ -251,7 +255,7 @@ int main(void)
 			playersMoved = true;
 		}
 		if (pad1 & KEY_LEFT) {
-			p2_pos_x -= 10;
+			p2_pos_x -= MOVEMENT_STEP;
 			if (p2_pos_x > MAP_WIDTH) {
 				p2_pos_x = 0;
 			}
@@ -294,6 +298,8 @@ int main(void)
 			u16 lut_w = abs_dx >> 2;
 			u16 camera_diff = lut_w < 64 ? camera_lut_lo[lut_w][abs_dy>>2] : camera_lut_hi[lut_w-64][abs_dy>>2];
 
+			u16 bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y;
+
 			// Defaults to displaying Window 1 / BG 1 only
 			s16 slope = 0;
 			u16 split_x = 255 << 8;
@@ -307,24 +313,12 @@ int main(void)
 				u16 camera_x = (p1_pos_x + p2_pos_x) >> 1;
 				u16 camera_y = (p1_pos_y + p2_pos_y) >> 1;
 
-				u16 bg1_scroll_x = camera_x < SCREEN_HALF_WIDTH ? 0 : camera_x - SCREEN_HALF_WIDTH;
-				u16 bg1_scroll_y = camera_y < SCREEN_HALF_HEIGHT ? 0 : camera_y - SCREEN_HALF_HEIGHT;
-				u16 bg2_scroll_x = bg1_scroll_x;
-				u16 bg2_scroll_y = bg1_scroll_y;
+				bg1_scroll_x = camera_x + SPRITE_HALF_WIDTH;
+				bg1_scroll_y = camera_y + SPRITE_HALF_HEIGHT;
+				bg2_scroll_x = bg1_scroll_x;
+				bg2_scroll_y = bg1_scroll_y;
 
-				// TODO sprite half-size ?
-				u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
-				u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
-				u16 p2_sprite_x = p2_pos_x - bg2_scroll_x;
-				u16 p2_sprite_y = p2_pos_y - bg2_scroll_y;
-
-				// TODO Apply scroll and sprite positions
-				bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
-				bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
-
-				// TODO Mirror sprites to look at each other ?
-				oamSetXY(0, p1_sprite_x, p1_sprite_y);
-				oamSetXY(4, p2_sprite_x, p2_sprite_y);
+				oamSetVisible(8, OBJ_HIDE);
 
 				// TODO Display only BG1 --> disable windows ?? update hdma table to always show bg1 ?
 				/*
@@ -361,35 +355,13 @@ int main(void)
 				s16 half_diff_x = dx < 0 ? -(diff_x_camera >> 1) : (diff_x_camera >> 1);
 				s16 half_diff_y = dy < 0 ? -(diff_y_camera >> 1) : (diff_y_camera >> 1);
 				// FIXME Adjust sprite position so that its CENTER is at the given position (depends on dx/dy sign)
-				s16 p1_sprite_offset_x = dx < 0 ? SPRITE_HALF_WIDTH : -SPRITE_HALF_WIDTH;
-				s16 p1_sprite_offset_y = dy < 0 ? SPRITE_HALF_HEIGHT : -SPRITE_HALF_HEIGHT;
-				s16 p2_sprite_offset_x = dx < 0 ? -SPRITE_HALF_WIDTH : SPRITE_HALF_WIDTH;
-				s16 p2_sprite_offset_y = dy < 0 ? -SPRITE_HALF_HEIGHT : SPRITE_HALF_HEIGHT;
-				u16 bg1_scroll_x = p1_pos_x + half_diff_x + p1_sprite_offset_x;
-				u16 bg1_scroll_y = p1_pos_y + half_diff_y + p1_sprite_offset_y;
-				u16 bg2_scroll_x = p2_pos_x - half_diff_x + p2_sprite_offset_x;
-				u16 bg2_scroll_y = p2_pos_y - half_diff_y + p2_sprite_offset_y;
-				// TODO Clamp bg scroll !!
-				// TODO bg_scroll = camera position - half-screen (scroll is top-left !!)
-				bg1_scroll_x = bg1_scroll_x < SCREEN_HALF_WIDTH ? 0 : (bg1_scroll_x > (MAP_WIDTH - SCREEN_HALF_WIDTH) ? (MAP_WIDTH - SCREEN_WIDTH) : bg1_scroll_x - SCREEN_HALF_WIDTH);
-				bg1_scroll_y = bg1_scroll_y < SCREEN_HALF_HEIGHT ? 0 : (bg1_scroll_y > (MAP_HEIGHT - SCREEN_HALF_HEIGHT) ? (MAP_HEIGHT - SCREEN_HEIGHT) : bg1_scroll_y - SCREEN_HALF_HEIGHT);
-				bg2_scroll_x = bg2_scroll_x < SCREEN_HALF_WIDTH ? 0 : (bg2_scroll_x > (MAP_WIDTH - SCREEN_HALF_WIDTH) ? (MAP_WIDTH - SCREEN_WIDTH) : bg2_scroll_x - SCREEN_HALF_WIDTH);
-				bg2_scroll_y = bg2_scroll_y < SCREEN_HALF_HEIGHT ? 0 : (bg2_scroll_y > (MAP_HEIGHT - SCREEN_HALF_HEIGHT) ? (MAP_HEIGHT - SCREEN_HEIGHT) : bg2_scroll_y - SCREEN_HALF_HEIGHT);
-				// TODO sprite position: p1_sprite_x = ???
-				u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
-				u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
-				u16 p2_sprite_x = p2_pos_x - bg2_scroll_x;
-				u16 p2_sprite_y = p2_pos_y - bg2_scroll_y;
-				//consoleNocashMessage("dx=%d dy=%d len=%d dist=%d dxn=%d dyn=%d dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d\n", dx, dy, length, distance, diff_x_normalized, diff_y_normalized, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y);
-				//consoleNocashMessage("dx=%d dy=%d dc=0x%04x dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d p1x=%d p1y=%d p2x=%d p2y=%d\n", dx, dy, camera_diff, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y, p1_sprite_x, p1_sprite_y, p2_sprite_x, p2_sprite_y);
+				bg1_scroll_x = p1_pos_x + half_diff_x + SPRITE_HALF_WIDTH;
+				bg1_scroll_y = p1_pos_y + half_diff_y + SPRITE_HALF_HEIGHT;
+				bg2_scroll_x = p2_pos_x - half_diff_x + SPRITE_HALF_WIDTH;
+				bg2_scroll_y = p2_pos_y - half_diff_y + SPRITE_HALF_HEIGHT;
 
-				// TODO Apply scroll and sprite positions
-				bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
-				bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
-
-				// TODO Mirror sprites to look at each other ?
-				oamSetXY(0, p1_sprite_x, p1_sprite_y);
-				oamSetXY(4, p2_sprite_x, p2_sprite_y);
+				oamSetVisible(8, OBJ_SHOW);
+				oamSetXY(8, SCREEN_HALF_WIDTH - SPRITE_HALF_WIDTH, SCREEN_HALF_HEIGHT - SPRITE_HALF_HEIGHT);
 
 				// TODO Update split screen
 			
@@ -421,7 +393,36 @@ int main(void)
 					? (SCREEN_HALF_WIDTH << 8)
 					: (slope > 0 ? (offset_x << 8) : ((255 - offset_x) << 8));
 				//consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
+
+				/*if (dx == 0) {
+					offset_y = SCREEN_HALF_HEIGHT;
+					slope = (dy > 0) ? -SCREEN_WIDTH : SCREEN_WIDTH;
+					split_x = (dy > 0) ? 255 : 0;
+					consoleNocashMessage("dx==0: offset_y=%d slope=%d split_x=%d\n", offset_y, slope, split_x);
+				}*/
 			}
+
+			// TODO Clamp bg scroll !!
+			// TODO bg_scroll = camera position - half-screen (scroll is top-left !!)
+			bg1_scroll_x = bg1_scroll_x < SCREEN_HALF_WIDTH ? 0 : (bg1_scroll_x > (MAP_WIDTH - SCREEN_HALF_WIDTH) ? (MAP_WIDTH - SCREEN_WIDTH) : bg1_scroll_x - SCREEN_HALF_WIDTH);
+			bg1_scroll_y = bg1_scroll_y < SCREEN_HALF_HEIGHT ? 0 : (bg1_scroll_y > (MAP_HEIGHT - SCREEN_HALF_HEIGHT) ? (MAP_HEIGHT - SCREEN_HEIGHT) : bg1_scroll_y - SCREEN_HALF_HEIGHT);
+			bg2_scroll_x = bg2_scroll_x < SCREEN_HALF_WIDTH ? 0 : (bg2_scroll_x > (MAP_WIDTH - SCREEN_HALF_WIDTH) ? (MAP_WIDTH - SCREEN_WIDTH) : bg2_scroll_x - SCREEN_HALF_WIDTH);
+			bg2_scroll_y = bg2_scroll_y < SCREEN_HALF_HEIGHT ? 0 : (bg2_scroll_y > (MAP_HEIGHT - SCREEN_HALF_HEIGHT) ? (MAP_HEIGHT - SCREEN_HEIGHT) : bg2_scroll_y - SCREEN_HALF_HEIGHT);
+			// TODO sprite position: p1_sprite_x = ???
+			u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
+			u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
+			u16 p2_sprite_x = p2_pos_x - bg2_scroll_x;
+			u16 p2_sprite_y = p2_pos_y - bg2_scroll_y;
+			//consoleNocashMessage("dx=%d dy=%d len=%d dist=%d dxn=%d dyn=%d dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d\n", dx, dy, length, distance, diff_x_normalized, diff_y_normalized, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y);
+			//consoleNocashMessage("dx=%d dy=%d dc=0x%04x dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d p1x=%d p1y=%d p2x=%d p2y=%d\n", dx, dy, camera_diff, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y, p1_sprite_x, p1_sprite_y, p2_sprite_x, p2_sprite_y);
+
+			// TODO Apply scroll and sprite positions
+			bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
+			bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
+
+			// TODO Mirror sprites to look at each other ?
+			oamSetXY(0, p1_sprite_x, p1_sprite_y);
+			oamSetXY(4, p2_sprite_x, p2_sprite_y);
 
 
 			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
@@ -434,7 +435,7 @@ int main(void)
 					ptr++;
 				}
 				// FIXME simplify this mess...
-				if (dx > 0) {	// W1 to the left
+				if (dx >= 0) {	// W1 to the left
 					if (split == 255) {	// Hide W2 altogether
 						*(ptr++) = 0;			// Window 1 Left
 						*(ptr++) = split;		// Window 1 Right
@@ -468,8 +469,6 @@ int main(void)
 						*(ptr++) = 0;			// Window 2 Left
 						*(ptr++) = split-1;		// Window 2 Right
 					}
-
-					
 				}
 				if (y >= offset_y && y < (SCREEN_HEIGHT-offset_y)) {
 					split_x += slope;
