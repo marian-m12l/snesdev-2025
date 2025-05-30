@@ -6,6 +6,14 @@
 #define SCREEN_HEIGHT (224)
 #define SCREEN_HALF_HEIGHT (112)
 
+#define MAP_WIDTH (512)
+#define MAP_HEIGHT (512)
+
+#define SPRITE_WIDTH (32)
+#define SPRITE_HEIGHT (32)
+#define SPRITE_HALF_WIDTH (16)
+#define SPRITE_HALF_HEIGHT (16)
+
 extern const char patternsmap_512_512, patternsmap_512_512_end;
 extern const char palettemap_512_512, palettemap_512_512_end;
 extern const char map_512_512, map_512_512_end;
@@ -183,32 +191,32 @@ int main(void)
 		// Update background scrolling instead !!
 		if (pad0 & KEY_DOWN) {
 			p1_pos_y += 10;
-			if (p1_pos_y > 512) {
-				p1_pos_y = 0;
+			if (p1_pos_y > (MAP_HEIGHT - SPRITE_HEIGHT)) {
+				p1_pos_y = MAP_HEIGHT - SPRITE_HEIGHT;
 			}
 			//oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
 		}
 		if (pad0 & KEY_UP) {
 			p1_pos_y -= 10;
-			if (p1_pos_y > 512) {
-				p1_pos_y = 512;
+			if (p1_pos_y > MAP_HEIGHT) {
+				p1_pos_y = 0;
 			}
 			//oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
 		}
 		if (pad0 & KEY_RIGHT) {
 			p1_pos_x += 10;
-			if (p1_pos_x > 512) {
-				p1_pos_x = 0;
+			if (p1_pos_x > (MAP_WIDTH - SPRITE_WIDTH)) {
+				p1_pos_x = MAP_WIDTH - SPRITE_WIDTH;
 			}
 			//oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
 		}
 		if (pad0 & KEY_LEFT) {
 			p1_pos_x -= 10;
-			if (p1_pos_x > 512) {
-				p1_pos_x = 512;
+			if (p1_pos_x > MAP_WIDTH) {
+				p1_pos_x = 0;
 			}
 			//oamSet(0, p1_pos_x, p1_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
@@ -220,32 +228,32 @@ int main(void)
 		// Handle player 2 movements
 		if (pad1 & KEY_DOWN) {
 			p2_pos_y += 10;
-			if (p2_pos_y > 512) {
-				p2_pos_y = 0;
+			if (p2_pos_y > (MAP_HEIGHT - SPRITE_HEIGHT)) {
+				p2_pos_y = MAP_HEIGHT - SPRITE_HEIGHT;
 			}
 			//oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
 		}
 		if (pad1 & KEY_UP) {
 			p2_pos_y -= 10;
-			if (p2_pos_y > 512) {
-				p2_pos_y = 512;
+			if (p2_pos_y > MAP_HEIGHT) {
+				p2_pos_y = 0;
 			}
 			//oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
 		}
 		if (pad1 & KEY_RIGHT) {
 			p2_pos_x += 10;
-			if (p2_pos_x > 512) {
-				p2_pos_x = 0;
+			if (p2_pos_x > (MAP_WIDTH - SPRITE_WIDTH)) {
+				p2_pos_x = MAP_WIDTH - SPRITE_WIDTH;
 			}
 			//oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
 		}
 		if (pad1 & KEY_LEFT) {
 			p2_pos_x -= 10;
-			if (p2_pos_x > 512) {
-				p2_pos_x = 512;
+			if (p2_pos_x > MAP_WIDTH) {
+				p2_pos_x = 0;
 			}
 			//oamSet(4, p2_pos_x, p2_pos_y, 3, 0, 0, 0, 0);
 			playersMoved = true;
@@ -285,6 +293,12 @@ int main(void)
 
 			u16 lut_w = abs_dx >> 2;
 			u16 camera_diff = lut_w < 64 ? camera_lut_lo[lut_w][abs_dy>>2] : camera_lut_hi[lut_w-64][abs_dy>>2];
+
+			// Defaults to displaying Window 1 / BG 1 only
+			s16 slope = 0;
+			u16 split_x = 255 << 8;
+			u16 offset_y = 0;
+
 			if (camera_diff == 0) {
 				// TODO single bg, no split screen
 				//consoleNocashMessage("should show bg 1 only\n");
@@ -313,7 +327,7 @@ int main(void)
 				oamSetXY(4, p2_sprite_x, p2_sprite_y);
 
 				// TODO Display only BG1 --> disable windows ?? update hdma table to always show bg1 ?
-
+				/*
 				u8* ptr = window_positions_table + 5;
 				u8 y;
 				for (y=0; y<SCREEN_HEIGHT; y++) {
@@ -325,7 +339,7 @@ int main(void)
 					*(ptr++) = 255;		// Window 1 Right
 					*(ptr++) = 255;		// Window 2 Left
 					*(ptr++) = 0;			// Window 2 Right
-				}
+				}*/
 			} else {
 				u16 diff_x_camera = (camera_diff >> 8) << 2;
 				u16 diff_y_camera = (camera_diff & 0xff) << 2;
@@ -347,20 +361,20 @@ int main(void)
 				s16 half_diff_x = dx < 0 ? -(diff_x_camera >> 1) : (diff_x_camera >> 1);
 				s16 half_diff_y = dy < 0 ? -(diff_y_camera >> 1) : (diff_y_camera >> 1);
 				// FIXME Adjust sprite position so that its CENTER is at the given position (depends on dx/dy sign)
-				s16 p1_sprite_offset_x = dx < 0 ? 16 : -16;
-				s16 p1_sprite_offset_y = dy < 0 ? 16 : -16;
-				s16 p2_sprite_offset_x = dx < 0 ? -16 : 16;
-				s16 p2_sprite_offset_y = dy < 0 ? -16 : 16;
+				s16 p1_sprite_offset_x = dx < 0 ? SPRITE_HALF_WIDTH : -SPRITE_HALF_WIDTH;
+				s16 p1_sprite_offset_y = dy < 0 ? SPRITE_HALF_HEIGHT : -SPRITE_HALF_HEIGHT;
+				s16 p2_sprite_offset_x = dx < 0 ? -SPRITE_HALF_WIDTH : SPRITE_HALF_WIDTH;
+				s16 p2_sprite_offset_y = dy < 0 ? -SPRITE_HALF_HEIGHT : SPRITE_HALF_HEIGHT;
 				u16 bg1_scroll_x = p1_pos_x + half_diff_x + p1_sprite_offset_x;
 				u16 bg1_scroll_y = p1_pos_y + half_diff_y + p1_sprite_offset_y;
 				u16 bg2_scroll_x = p2_pos_x - half_diff_x + p2_sprite_offset_x;
 				u16 bg2_scroll_y = p2_pos_y - half_diff_y + p2_sprite_offset_y;
 				// TODO Clamp bg scroll !!
 				// TODO bg_scroll = camera position - half-screen (scroll is top-left !!)
-				bg1_scroll_x = bg1_scroll_x < SCREEN_HALF_WIDTH ? 0 : bg1_scroll_x - SCREEN_HALF_WIDTH;
-				bg1_scroll_y = bg1_scroll_y < SCREEN_HALF_HEIGHT ? 0 : bg1_scroll_y - SCREEN_HALF_HEIGHT;
-				bg2_scroll_x = bg2_scroll_x < SCREEN_HALF_WIDTH ? 0 : bg2_scroll_x - SCREEN_HALF_WIDTH;
-				bg2_scroll_y = bg2_scroll_y < SCREEN_HALF_HEIGHT ? 0 : bg2_scroll_y - SCREEN_HALF_HEIGHT;
+				bg1_scroll_x = bg1_scroll_x < SCREEN_HALF_WIDTH ? 0 : (bg1_scroll_x > (MAP_WIDTH - SCREEN_HALF_WIDTH) ? (MAP_WIDTH - SCREEN_WIDTH) : bg1_scroll_x - SCREEN_HALF_WIDTH);
+				bg1_scroll_y = bg1_scroll_y < SCREEN_HALF_HEIGHT ? 0 : (bg1_scroll_y > (MAP_HEIGHT - SCREEN_HALF_HEIGHT) ? (MAP_HEIGHT - SCREEN_HEIGHT) : bg1_scroll_y - SCREEN_HALF_HEIGHT);
+				bg2_scroll_x = bg2_scroll_x < SCREEN_HALF_WIDTH ? 0 : (bg2_scroll_x > (MAP_WIDTH - SCREEN_HALF_WIDTH) ? (MAP_WIDTH - SCREEN_WIDTH) : bg2_scroll_x - SCREEN_HALF_WIDTH);
+				bg2_scroll_y = bg2_scroll_y < SCREEN_HALF_HEIGHT ? 0 : (bg2_scroll_y > (MAP_HEIGHT - SCREEN_HALF_HEIGHT) ? (MAP_HEIGHT - SCREEN_HEIGHT) : bg2_scroll_y - SCREEN_HALF_HEIGHT);
 				// TODO sprite position: p1_sprite_x = ???
 				u16 p1_sprite_x = p1_pos_x - bg1_scroll_x;
 				u16 p1_sprite_y = p1_pos_y - bg1_scroll_y;
@@ -387,7 +401,7 @@ int main(void)
 				// TODO Use unsigned ??
 				//consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
 				// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
-				s16 slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
+				slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
 				//consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
 
 				// TODO Hardware division !!!
@@ -401,69 +415,69 @@ int main(void)
 				u16 columns = abs_slope > 292 ? SCREEN_WIDTH : (abs_slope * SCREEN_HEIGHT) >> 8;
 				//consoleNocashMessage("Voronoi split lines=%d columns=%d\n", lines, columns);
 				u16 offset_x = columns < SCREEN_WIDTH ? SCREEN_HALF_WIDTH - (columns >> 1) : 0;	// FIXME wrong with positive slope ??
-				u16 offset_y = lines < SCREEN_HEIGHT ? SCREEN_HALF_HEIGHT - (lines >> 1) : 0;	// FIXME offset hdma --> need to handle full-height hdma with 4 streaks of 60 lines ?
+				offset_y = lines < SCREEN_HEIGHT ? SCREEN_HALF_HEIGHT - (lines >> 1) : 0;	// FIXME offset hdma --> need to handle full-height hdma with 4 streaks of 60 lines ?
 				//consoleNocashMessage("Voronoi hdma offsets x=%d y=%d\n", offset_x, offset_y);
-				u16 split_x = slope == 0
+				split_x = slope == 0
 					? (SCREEN_HALF_WIDTH << 8)
 					: (slope > 0 ? (offset_x << 8) : ((255 - offset_x) << 8));
 				//consoleNocashMessage("Voronoi starting at X = 0x%04x\n", split_x);
-				
+			}
 
-				// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
 
-				u8* ptr = window_positions_table + 5;
-				u8 split = split_x >> 8;
-				u8 y;
-				for (y=0; y<SCREEN_HEIGHT; y++) {
-					if ((y%60) == 0) {
-						ptr++;
-					}
-					// FIXME simplify this mess...
-					if (dx > 0) {	// W1 to the left
-						if (split == 255) {	// Hide W2 altogether
-							*(ptr++) = 0;			// Window 1 Left
-							*(ptr++) = split;		// Window 1 Right
-							*(ptr++) = split;		// Window 2 Left
-							*(ptr++) = 0;			// Window 2 Right
-						} else if (split == 0) { // Hide W1 altogether
-							*(ptr++) = 255;			// Window 1 Left
-							*(ptr++) = split;		// Window 1 Right
-							*(ptr++) = split;		// Window 2 Left
-							*(ptr++) = 255;			// Window 2 Right
-						} else {
-							*(ptr++) = 0;			// Window 1 Left
-							*(ptr++) = split-1;		// Window 1 Right
-							*(ptr++) = split+1;		// Window 2 Left
-							*(ptr++) = 255;			// Window 2 Right
-						}
-					} else {	// W1 to the right
-						if (split == 255) {	// Hide W1 altogether
-							*(ptr++) = split;		// Window 1 Left
-							*(ptr++) = 0;			// Window 1 Right
-							*(ptr++) = 0;			// Window 2 Left
-							*(ptr++) = split;		// Window 2 Right
-						} else if (split == 0) { // Hide W2 altogether
-							*(ptr++) = split;		// Window 1 Left
-							*(ptr++) = 255;			// Window 1 Right
-							*(ptr++) = 255;			// Window 2 Left
-							*(ptr++) = split;		// Window 2 Right
-						} else {
-							*(ptr++) = split+1;		// Window 1 Left
-							*(ptr++) = 255;			// Window 1 Right
-							*(ptr++) = 0;			// Window 2 Left
-							*(ptr++) = split-1;		// Window 2 Right
-						}
+			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
 
-						
+			u8* ptr = window_positions_table + 5;
+			u8 split = split_x >> 8;
+			u8 y;
+			for (y=0; y<SCREEN_HEIGHT; y++) {
+				if ((y%60) == 0) {
+					ptr++;
+				}
+				// FIXME simplify this mess...
+				if (dx > 0) {	// W1 to the left
+					if (split == 255) {	// Hide W2 altogether
+						*(ptr++) = 0;			// Window 1 Left
+						*(ptr++) = split;		// Window 1 Right
+						*(ptr++) = split;		// Window 2 Left
+						*(ptr++) = 0;			// Window 2 Right
+					} else if (split == 0) { // Hide W1 altogether
+						*(ptr++) = 255;			// Window 1 Left
+						*(ptr++) = split;		// Window 1 Right
+						*(ptr++) = split;		// Window 2 Left
+						*(ptr++) = 255;			// Window 2 Right
+					} else {
+						*(ptr++) = 0;			// Window 1 Left
+						*(ptr++) = split-1;		// Window 1 Right
+						*(ptr++) = split+1;		// Window 2 Left
+						*(ptr++) = 255;			// Window 2 Right
 					}
-					if (y >= offset_y && y < (SCREEN_HEIGHT-offset_y)) {
-						split_x += slope;
-						split = split_x >> 8;
+				} else {	// W1 to the right
+					if (split == 255) {	// Hide W1 altogether
+						*(ptr++) = split;		// Window 1 Left
+						*(ptr++) = 0;			// Window 1 Right
+						*(ptr++) = 0;			// Window 2 Left
+						*(ptr++) = split;		// Window 2 Right
+					} else if (split == 0) { // Hide W2 altogether
+						*(ptr++) = split;		// Window 1 Left
+						*(ptr++) = 255;			// Window 1 Right
+						*(ptr++) = 255;			// Window 2 Left
+						*(ptr++) = split;		// Window 2 Right
+					} else {
+						*(ptr++) = split+1;		// Window 1 Left
+						*(ptr++) = 255;			// Window 1 Right
+						*(ptr++) = 0;			// Window 2 Left
+						*(ptr++) = split-1;		// Window 2 Right
 					}
-					if (y >= (SCREEN_HEIGHT-offset_y)) {
-						split_x = (slope > 0) ? (255 << 8) : 0;
-						split = split_x >> 8;
-					}
+
+					
+				}
+				if (y >= offset_y && y < (SCREEN_HEIGHT-offset_y)) {
+					split_x += slope;
+					split = split_x >> 8;
+				}
+				if (y >= (SCREEN_HEIGHT-offset_y)) {
+					split_x = (slope > 0) ? (255 << 8) : 0;
+					split = split_x >> 8;
 				}
 			}
 
