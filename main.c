@@ -265,7 +265,7 @@ int main(void)
 
 
 		// Wait vblank sync
-        WaitForVBlank();
+        //WaitForVBlank();
 
 		if (playersMoved) {
 
@@ -416,13 +416,24 @@ int main(void)
 			//consoleNocashMessage("dx=%d dy=%d len=%d dist=%d dxn=%d dyn=%d dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d\n", dx, dy, length, distance, diff_x_normalized, diff_y_normalized, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y);
 			//consoleNocashMessage("dx=%d dy=%d dc=0x%04x dxc=%d dyc=%d scx1=%d scy1=%d scx2=%d scy2=%d p1x=%d p1y=%d p2x=%d p2y=%d\n", dx, dy, camera_diff, diff_x_camera, diff_y_camera, bg1_scroll_x, bg1_scroll_y, bg2_scroll_x, bg2_scroll_y, p1_sprite_x, p1_sprite_y, p2_sprite_x, p2_sprite_y);
 
+			// TODO Move bg/hdma table right after VBlank
+			/*
 			// TODO Apply scroll and sprite positions
 			bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
 			bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
+			*/
 
 			// TODO Mirror sprites to look at each other ?
 			oamSetXY(0, p1_sprite_x, p1_sprite_y);
 			oamSetXY(4, p2_sprite_x, p2_sprite_y);
+
+
+			// Wait vblank sync
+			WaitForVBlank();
+
+			// TODO Apply scroll and sprite positions
+			bgSetScroll(0, bg1_scroll_x, bg1_scroll_y);
+			bgSetScroll(1, bg2_scroll_x, bg2_scroll_y);
 
 
 			// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right) --> handle special case ?!
@@ -480,6 +491,9 @@ int main(void)
 				}
 			}
 
+		} else {
+			// Wait vblank sync
+			WaitForVBlank();
 		}
 
 		// TODO Compute players distance + scroll backgrounds + voronoi split ?
