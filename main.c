@@ -373,8 +373,20 @@ int main(void)
 				// TODO Use unsigned ??
 				//consoleNocashMessage("Voronoi p1(%d,%d) p2(%d,%d)\n", p1_pos_x, p1_pos_y, p2_pos_x, p2_pos_y);
 				// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
-				slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
-				//consoleNocashMessage("Voronoi dx=%d dy=%d slope = %d\n", dx, dy, slope);
+
+				// FIXME Hardware division! --> asm routine??
+				*((u16*) 0x4204) = abs_dy << 5;
+				*((u8*) 0x4206) = abs_dx;	// FIXME limit dx to 8 bits !!! FIXME handle dx == 0 !!
+				// TODO wait 16 cycles ???
+				consoleNocashMessage("blablabla\n");
+				u16 u_slope = *((u16*) 0x4214);	// TODO remainder in 0x4216
+				s16 s_slope = ((dx >= 0 && dy >= 0) || (dx < 0 && dy < 0)) ? -(u_slope << 3) : (u_slope << 3);
+
+				slope = s_slope;
+				//consoleNocashMessage("|dx|=%d |dy|=%d u_slope=%d s_slope=%d slope=%d\n", abs_dx, abs_dy, u_slope, s_slope, slope);
+
+				//slope = - ((((dy << 5)) / dx) << 3);	// Works up to dy == 1023 ? TODO Could remove to bits to both dy and dx too ?
+				//consoleNocashMessage("Voronoi dx=%d dy=%d slope=%d u_slope=%d s_slope=%d\n", dx, dy, slope, u_slope, s_slope);
 
 				// TODO Hardware division !!!
 				// TODO Handle slope == 0
