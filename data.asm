@@ -108,7 +108,103 @@ setModeHdmaWindow1And2SingleHdma:
     sta $4322
 
     sep #$20
-    lda #$04                                                  ; channel 2 transfers all 4 window registers
+    lda.l   REG_HDMAEN
+    ora #$04                                                  ; channel 2 transfers all 4 window registers
+    sta.l   REG_HDMAEN
+
+    plx
+    plb
+    plp
+    rtl
+
+
+; void setModeHdmaWindow1SingleHdma(u8 bgrnd, u8 bgrndmask,u8* hdmatable)
+; FIXME Hard-coded BG (0x1) / MASK (0x03) ?!
+; 8 9 10-13
+setModeHdmaWindow1SingleHdma:
+    php
+    phb
+    phx
+
+    sep #$20
+    lda #0
+    pha
+    plb
+
+    lda 8,s                                                   ; got all the flags to active windows on BG1..4
+    ora #$10                                                  ; also add obj in window effect
+    sta REG_TMW                                               ; active or not window
+
+    lda 8,s
+    and #$0C                                                  ; if effect on BG3 or BG4, not same register
+    bne +
+    lda 9,s                                                   ; got all the flags to mask effect (inside, outside on BG1..2)
+    sta REG_W12SEL
+    bra ++
++:
+    lda 9,s                                                   ; got all the flags to mask effect (inside, outside on BG3..4)
+    sta REG_W34SEL
+
+++: lda 9,s                                                   ; todo : find a way to manage easily objects -> currently, it works only for BG1
+    ;FIXME sta REG_WOBJSEL
+
+
+    ; FIXME Single Mode 4 HDMA
+
+    lda #$01                                                  ; 2 registers, write once
+    sta $4320
+    lda #$26                                                  ; 2126  Window 1 Left Position (X1) to 2127 Window 1 Right Position (X2)
+    sta $4321                                                 ; destination
+    lda 12,s                                                  ; bank address of table
+    sta $4324
+
+    rep #$20
+    lda 10,s                                                  ; low address of table
+    sta $4322
+
+    sep #$20
+    lda.l   REG_HDMAEN
+    ora #$04                                                  ; channel 2 transfers all 2 window registers
+    sta.l   REG_HDMAEN
+
+    plx
+    plb
+    plp
+    rtl
+
+
+
+; void replaceHdmaTable(u8* hdmatable)
+; 8-11
+replaceHdmaTable:
+    php
+    phb
+    phx
+
+    sep #$20
+    lda #0
+    pha
+    plb
+
+    ; Stop hdma
+    lda.l   REG_HDMAEN
+    and #$FB
+    sta.l   REG_HDMAEN
+
+    lda #$04                                                  ; 4 registers, write once
+    sta $4320
+    lda #$26                                                  ; 2126  Window 1 Left Position (X1) to 2129 Window 2 Right Position (X2)
+    sta $4321                                                 ; destination
+    lda 10,s                                                  ; bank address of table
+    sta $4324
+
+    rep #$20
+    lda 8,s                                                  ; low address of table
+    sta $4322
+
+    sep #$20
+    lda.l   REG_HDMAEN
+    ora #$04                                                  ; channel 2 transfers all 4 window registers
     sta.l   REG_HDMAEN
 
     plx
