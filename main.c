@@ -375,8 +375,8 @@ int main(void)
 				// FIXME if dy == 0 --> slope is 0 and window is half-screen (top / right)
 
 				// FIXME Hardware division! --> asm routine??
-				*((u16*) 0x4204) = abs_dy << 5;
-				*((u8*) 0x4206) = abs_dx;	// FIXME limit dx to 8 bits !!! FIXME handle dx == 0 !!
+				*((u16*) 0x4204) = abs_dy << 4;
+				*((u8*) 0x4206) = abs_dx >> 1;	// FIXME limit dx to 8 bits !!! FIXME handle dx == 0 !!
 				// TODO wait 16 cycles ???
 				consoleNocashMessage("blablabla\n");
 				u16 u_slope = *((u16*) 0x4214);	// TODO remainder in 0x4216
