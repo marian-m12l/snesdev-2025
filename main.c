@@ -533,9 +533,10 @@ int main(void)
 				*((u16*) 0x4204) = abs_dy << 4;
 				*((u8*) 0x4206) = abs_dx >> 1;	// FIXME limit dx to 8 bits !!! FIXME handle dx == 0 !!
 				// TODO wait 16 cycles ???
-				consoleNocashMessage("blablabla\n");
+				/*consoleNocashMessage("blablabla\n");
 				u16 u_slope = *((u16*) 0x4214);	// TODO remainder in 0x4216
-				s16 s_slope = ((dx >= 0 && dy >= 0) || (dx < 0 && dy < 0)) ? -(u_slope << 3) : (u_slope << 3);
+				s16 s_slope = ((dx >= 0 && dy >= 0) || (dx < 0 && dy < 0)) ? -(u_slope << 3) : (u_slope << 3);*/
+				s16 s_slope = ((dx >= 0 && dy >= 0) || (dx < 0 && dy < 0)) ? -((*((u16*) 0x4214)) << 3) : ((*((u16*) 0x4214)) << 3);
 
 				slope = s_slope;
 				//consoleNocashMessage("|dx|=%d |dy|=%d u_slope=%d s_slope=%d slope=%d\n", abs_dx, abs_dy, u_slope, s_slope, slope);
@@ -547,17 +548,33 @@ int main(void)
 				// TODO Handle slope == 0
 				u16 abs_slope = slope < 0 ? -slope : slope;
 				
+				// FIXME Compute line for approximate y offset, then draw slope until end of screen is reached ?!
+
+				// TODO if abs_slope < 293 ==> lines == 224 (whole screen height)
+				// TODO otherwise, lines has to be < 224 (horizontal-ish split line) --> 0xffff / abs_slope --> 
+
 				// FIXME Hardware division! --> asm routine??
-				*((u16*) 0x4204) = 255 << 8;
 				// TODO Cap slope + reduce range ??? handle large and small slopes differently ?
-				*((u8*) 0x4206) = abs_slope;	// FIXME limit dx to 8 bits !!! FIXME handle abs_slope == 0 !!
+				// TODO if slope > 255 --> (255 << 4) / (abs_slope >> 4)
+				// TODO if slope <= 255 --> (255 << 8) / abs_slope
+				// TODO if slope > 4095 --> hard-coded value ?? LUT ?
+				// FIXME HDMA Table construction must adjust for approximation ?
+				// FIXME use the remainder ??? 0x4216 ??
+				*((u16*) 0x4204) = abs_slope > 255 ? 0x0fff : 0xffff;
+				*((u8*) 0x4206) = abs_slope > 255 ? (abs_slope >> 4) : abs_slope;	// FIXME limit dx to 8 bits !!! FIXME handle abs_slope == 0 !!
 				// TODO wait 16 cycles ???
-				consoleNocashMessage("blablabla2\n");
+				/*consoleNocashMessage("blablabla2\n");
 				u16 u_lines = *((u16*) 0x4214);	// TODO remainder in 0x4216
+				u16 remainder = *((u16*) 0x4216);
+				// TODO Add lines based on remainder --> shifted depending on divisor ?
+				// e.g. slope > 255
+				// 			slope 8184 --> 4095 / 1023 = 4 (remainder 3)
+				//			slope 9200 --> 4095 / 1150 = 3 (remainder 645) --> add (645 >> 4) = (645 / 256) = 2 (2,51...)
+				//			slope 10920 --> 4095 / 1365 = 3 (remainder 0) 
 				
 				u16 lines = u_lines;
 				//u16 lines = (255<<8)/abs_slope;
-				
+				*/
 				//u16 columns = abs_slope > SCREEN_HEIGHT ? SCREEN_WIDTH : abs_slope;
 				//u16 columns = (abs_slope * SCREEN_HEIGHT) >> 8;	// FIXME OVERFLOW
 				//u16 columns = ((abs_slope>>1) * (SCREEN_HEIGHT>>1)) >> 6;	// FIXME sometimes wrong
@@ -565,6 +582,7 @@ int main(void)
 				u16 columns = abs_slope > 292 ? SCREEN_WIDTH : (abs_slope * SCREEN_HEIGHT) >> 8;
 				//consoleNocashMessage("Voronoi split lines=%d columns=%d\n", lines, columns);
 				u16 offset_x = columns < SCREEN_WIDTH ? SCREEN_HALF_WIDTH - (columns >> 1) : 0;	// FIXME wrong with positive slope ??
+				u16 lines = *((u16*) 0x4214);
 				offset_y = lines < SCREEN_HEIGHT ? SCREEN_HALF_HEIGHT - (lines >> 1) : 0;	// FIXME offset hdma --> need to handle full-height hdma with 4 streaks of 60 lines ?
 				//consoleNocashMessage("Voronoi hdma offsets x=%d y=%d\n", offset_x, offset_y);
 				split_x = slope == 0
@@ -728,9 +746,9 @@ int main(void)
 		}
 
 		frames++;
-		if ((frames & 0x3f) == 0) {
+		/*if ((frames & 0x3f) == 0) {
 			consoleNocashMessage("frames=%d vbl=%d lag=%d\n", frames, snes_vblank_count, lag_frame_counter);
-		}
+		}*/
 
 		// TODO Compute players distance + scroll backgrounds + voronoi split ?
 
