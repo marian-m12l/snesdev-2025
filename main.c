@@ -119,18 +119,7 @@ int main(void) {
     setMode(BG_MODE1, 0);
     bgSetEnable(1);	// Enable BG2
     bgSetDisable(2);	// Disable BG3
-
-
-	// FIXME update sprite position / bg scroll on first loop?
-/*
-	// Initial player positions
-	oamSetXY(0, p1_pos_x, p1_pos_y);
-	oamSetXY(4, p2_pos_x, p2_pos_y);
-
-	// Initial BG scroll
-	bgSetScroll(0, p1_pos_x-64, p1_pos_y-120);
-	bgSetScroll(1, p2_pos_x-64, p2_pos_y-120);
-*/
+	
 	// Configure HDMA to control BG1 window
 	WaitForVBlank();
 	setModeHdmaWindow1SingleHdma(0x01, 0x03, window1_positions_table);
